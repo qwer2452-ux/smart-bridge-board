@@ -1,1 +1,720 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>조타실 QR 자료 게시판</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 사용자 정의 테마 색상 설정 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            900: '#1e3a8a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* 기본 스크롤바 숨기기 (모바일 앱 느낌) */
+        ::-webkit-scrollbar { width: 0px; background: transparent; }
+        body { -webkit-tap-highlight-color: transparent; }
+    </style>
+</head>
+<body class="bg-slate-100 flex justify-center text-slate-800 antialiased selection:bg-brand-200">
 
+    <!-- 모바일 앱 컨테이너 -->
+    <div class="w-full max-w-md bg-white min-h-screen shadow-2xl relative overflow-hidden flex flex-col">
+
+        <!-- ========================================== -->
+        <!-- 1. 열람자 모드 (기본 화면) -->
+        <!-- ========================================== -->
+        <div id="viewer-mode" class="flex flex-col h-full w-full absolute inset-0 bg-slate-50 transition-transform duration-300 transform translate-x-0">
+            
+            <!-- 헤더 -->
+            <header class="bg-brand-900 text-white p-6 shadow-md rounded-b-2xl">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-2xl font-bold tracking-tight">Smart Bridge Board</h1>
+                        <p class="text-brand-100 text-sm mt-1">QR 스캔 자료 열람 시스템</p>
+                    </div>
+                    <div class="opacity-90">
+                        <!-- 세련된 조타 핸들(Ship Wheel) 아이콘으로 교체 -->
+                        <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-brand-200 drop-shadow-md">
+                            <circle cx="12" cy="12" r="8"></circle>
+                            <circle cx="12" cy="12" r="3"></circle>
+                            <line x1="12" y1="2" x2="12" y2="4"></line>
+                            <line x1="12" y1="20" x2="12" y2="22"></line>
+                            <line x1="22" y1="12" x2="20" y2="12"></line>
+                            <line x1="4" y1="12" x2="2" y2="12"></line>
+                            <line x1="19.07" y1="4.93" x2="17.66" y2="6.34"></line>
+                            <line x1="6.34" y1="17.66" x2="4.93" y2="19.07"></line>
+                            <line x1="19.07" y1="19.07" x2="17.66" y2="17.66"></line>
+                            <line x1="6.34" y1="6.34" x2="4.93" y2="4.93"></line>
+                        </svg>
+                    </div>
+                </div>
+            </header>
+
+            <!-- 메인 컨텐츠 (게시물 목록) -->
+            <main class="flex-1 overflow-y-auto p-4">
+                <p class="text-sm text-slate-500 mb-4 text-center">원하시는 문서를 선택하여 열람하세요.</p>
+                
+                <!-- 더미 데이터 리스트 (추후 Firebase 연동 시 동적 생성됨) -->
+                <div id="document-list" class="grid grid-cols-2 gap-3">
+                    <!-- 이곳에 실시간 데이터가 렌더링됩니다 -->
+                </div>
+            </main>
+
+            <!-- 푸터 (관리자 로그인 버튼) -->
+            <footer class="p-4 flex justify-end">
+                <button onclick="openLoginModal()" class="text-slate-400 hover:text-slate-600 p-2 rounded-full transition-colors focus:outline-none">
+                    <span class="text-xl">⚙️</span>
+                </button>
+            </footer>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- 2. 관리자 로그인 모달 -->
+        <!-- ========================================== -->
+        <div id="login-modal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300 p-4">
+            <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl p-6 transform scale-95 transition-transform duration-300" id="login-modal-content">
+                <div class="flex justify-between items-center mb-5">
+                    <h2 class="text-xl font-bold text-slate-800">관리자 로그인</h2>
+                    <button onclick="closeLoginModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold">&times;</button>
+                </div>
+                
+                <form onsubmit="handleLogin(event)" class="flex flex-col gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">이메일</label>
+                        <input type="email" id="email" required class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all" placeholder="admin@ship.com">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">비밀번호</label>
+                        <input type="password" id="password" required class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all" placeholder="••••••••">
+                    </div>
+                    <button type="submit" class="w-full bg-brand-600 text-white font-semibold py-2.5 rounded-lg mt-2 hover:bg-brand-900 transition-colors active:scale-[0.98]">
+                        로그인
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- 3. 관리자 모드 (대시보드) -->
+        <!-- ========================================== -->
+        <div id="admin-mode" class="flex flex-col h-full w-full absolute inset-0 bg-slate-50 transition-transform duration-300 transform translate-x-full z-10">
+            
+            <header class="bg-slate-800 text-white p-4 shadow-md flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <button onclick="goBackToViewer()" class="text-white hover:text-brand-200 transition-colors" title="열람자 모드로 돌아가기">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
+                        </svg>
+                    </button>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xl">⚙️</span>
+                        <h1 class="text-lg font-bold">관리자 대시보드</h1>
+                    </div>
+                </div>
+                <button onclick="handleLogout()" class="text-sm bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded-md transition-colors">
+                    로그아웃
+                </button>
+            </header>
+
+            <main class="flex-1 overflow-y-auto p-4 flex flex-col gap-6">
+                
+                <!-- 문서 업로드 폼 -->
+                <section class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+                    <h2 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                        <span>📤</span> 새 문서 등록
+                    </h2>
+                    <form onsubmit="handleUpload(event)" class="flex flex-col gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">문서 제목</label>
+                            <input type="text" id="doc-title" required class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-800 outline-none" placeholder="예: 2026년 하반기 비상조직표">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">파일 첨부</label>
+                            <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-slate-300 border-dashed rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer" onclick="document.getElementById('file-upload').click()">
+                                <div class="space-y-1 text-center w-full">
+                                    
+                                    <!-- 기본 업로드 안내 UI -->
+                                    <div id="upload-prompt" class="flex flex-col items-center">
+                                        <svg class="mx-auto h-12 w-12 text-slate-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
+                                            <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                                        </svg>
+                                        <div class="flex text-sm text-slate-600 justify-center">
+                                            <label for="file-upload" class="relative cursor-pointer bg-transparent rounded-md font-medium text-brand-600 hover:text-brand-500 focus-within:outline-none pointer-events-none">
+                                                <span>파일 선택하기</span>
+                                                <input id="file-upload" name="file-upload" type="file" class="sr-only" accept=".pdf, image/jpeg, image/png" multiple>
+                                            </label>
+                                        </div>
+                                        <p class="text-xs text-slate-500 mt-2 font-medium text-red-500 text-center">
+                                            ※ PDF 또는 이미지 파일만 업로드해주세요.<br>(여러 장 동시 선택 가능)
+                                        </p>
+                                    </div>
+
+                                    <!-- 파일 선택 시 보여줄 썸네일 미리보기 UI -->
+                                    <div id="file-preview-container" class="hidden flex-col items-center w-full">
+                                        <!-- 선택한 파일들의 미리보기가 들어갈 그리드 -->
+                                        <div id="image-preview-grid" class="flex flex-wrap justify-center gap-2 mb-3"></div>
+                                        <!-- 선택된 파일 이름 -->
+                                        <div id="file-name-display" class="text-sm font-bold text-brand-600 mt-1 break-all text-center"></div>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="w-full bg-slate-800 text-white font-semibold py-3 rounded-lg mt-2 hover:bg-slate-900 transition-colors">
+                            등록하기
+                        </button>
+                    </form>
+                </section>
+
+                <!-- 등록된 문서 관리 목록 -->
+                <section>
+                    <h2 class="text-lg font-bold text-slate-800 mb-3 ml-1 flex items-center gap-2">
+                        <span>📁</span> 등록된 문서 관리
+                    </h2>
+                    <ul id="admin-doc-list" class="flex flex-col gap-2">
+                        <!-- 이곳에 실시간 데이터가 렌더링됩니다 -->
+                    </ul>
+                </section>
+            </main>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- 4. 문서 뷰어 모달 (전체화면) -->
+        <div id="doc-viewer-mode" class="fixed inset-0 bg-white z-[100] flex flex-col transform translate-y-full transition-transform duration-300">
+            <!-- 뷰어 헤더 -->
+            <header class="bg-white border-b border-slate-200 px-4 py-3 flex justify-between items-center shadow-sm z-10">
+                <h2 id="viewer-title" class="text-lg font-bold text-slate-800 line-clamp-1">문서 제목</h2>
+                <button onclick="closeDocViewer()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-full w-8 h-8 flex items-center justify-center transition-colors">
+                    <span class="font-bold text-lg">&times;</span>
+                </button>
+            </header>
+            
+            <!-- 뷰어 컨텐츠 영역 -->
+            <main class="flex-1 bg-slate-200 overflow-hidden relative flex items-center justify-center">
+                <!-- 여기에 PDF iframe이나 img 태그가 동적으로 삽입됩니다. (더미 UI용 안내문) -->
+                <div id="viewer-content" class="w-full h-full flex flex-col items-center justify-center text-slate-500 p-4 text-center">
+                    <span class="text-4xl mb-4">📄</span>
+                    <p>이곳에 PDF 또는 이미지 파일이<br>전체화면으로 표시됩니다.</p>
+                </div>
+            </main>
+        </div>
+
+    </div>
+
+    <!-- Firebase SDK (v10 모듈 방식) 및 비즈니스 로직 -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, updateDoc, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
+
+        // ⚠️ TODO: 바로 이 아래에 있는 firebaseConfig 블록 전체를 복사하신 코드로 덮어쓰세요!
+        const firebaseConfig = {
+  apiKey: "AIzaSyAo7hgaaj4NedahYZFEQfZqbIVi596A_XQ",
+  authDomain: "smart-bridge-board.firebaseapp.com",
+  projectId: "smart-bridge-board",
+  storageBucket: "smart-bridge-board.firebasestorage.app",
+  messagingSenderId: "81406484031",
+  appId: "1:81406484031:web:68bb7580e46b1d5348628a",
+  measurementId: "G-7D68RX6RTB"
+};
+
+        // Firebase 서비스 초기화
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const storage = getStorage(app);
+
+        const viewerMode = document.getElementById('viewer-mode');
+        const adminMode = document.getElementById('admin-mode');
+        const loginModal = document.getElementById('login-modal');
+        const loginModalContent = document.getElementById('login-modal-content');
+        const docViewerMode = document.getElementById('doc-viewer-mode');
+        const viewerTitle = document.getElementById('viewer-title');
+
+        // 파일 선택 시 썸네일 미리보기 및 파일명 표시 로직 (다중 파일 지원)
+        document.getElementById('file-upload').addEventListener('change', function(e) {
+            const uploadPrompt = document.getElementById('upload-prompt');
+            const previewContainer = document.getElementById('file-preview-container');
+            const imgPreviewGrid = document.getElementById('image-preview-grid');
+            const fileNameDisplay = document.getElementById('file-name-display');
+
+            if (this.files && this.files.length > 0) {
+                uploadPrompt.classList.add('hidden');
+                previewContainer.classList.remove('hidden');
+                previewContainer.classList.add('flex');
+                
+                imgPreviewGrid.innerHTML = ''; // 썸네일 초기화
+                fileNameDisplay.innerHTML = `✅ 선택됨: <span class="text-slate-700">총 ${this.files.length}개의 파일</span>`;
+
+                // 최대 6개까지만 미리보기 보여주기 (공간 절약)
+                const filesArray = Array.from(this.files);
+                const displayFiles = filesArray.slice(0, 6);
+
+                displayFiles.forEach(file => {
+                    const fileExt = file.name.split('.').pop().toLowerCase();
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'w-16 h-16 bg-slate-200 rounded shadow-sm overflow-hidden flex items-center justify-center relative border border-slate-300';
+
+                    if (fileExt === 'jpg' || fileExt === 'jpeg' || fileExt === 'png') {
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            itemDiv.innerHTML = `<img src="${e.target.result}" class="w-full h-full object-cover" />`;
+                        }
+                        reader.readAsDataURL(file);
+                    } else if (fileExt === 'pdf') {
+                        itemDiv.innerHTML = `<span class="text-xl">📄</span><span class="absolute bottom-1 right-1 text-[8px] font-bold bg-white px-1 rounded text-red-500">PDF</span>`;
+                    }
+                    imgPreviewGrid.appendChild(itemDiv);
+                });
+
+                if(filesArray.length > 6) {
+                    const extraDiv = document.createElement('div');
+                    extraDiv.className = 'w-16 h-16 bg-slate-100 rounded flex items-center justify-center text-xs font-bold text-slate-500 border border-slate-300';
+                    extraDiv.textContent = `+${filesArray.length - 6}`;
+                    imgPreviewGrid.appendChild(extraDiv);
+                }
+            } else {
+                uploadPrompt.classList.remove('hidden');
+                previewContainer.classList.add('hidden');
+                previewContainer.classList.remove('flex');
+                fileNameDisplay.innerHTML = '';
+                imgPreviewGrid.innerHTML = '';
+            }
+        });
+
+        // HTML 인라인 이벤트(onclick)에서 모듈 내부 함수를 호출하기 위해 window 객체에 할당합니다.
+        window.openLoginModal = () => {
+            loginModal.classList.remove('opacity-0', 'pointer-events-none');
+            loginModalContent.classList.remove('scale-95');
+            loginModalContent.classList.add('scale-100');
+        };
+
+        window.closeLoginModal = () => {
+            loginModal.classList.add('opacity-0', 'pointer-events-none');
+            loginModalContent.classList.remove('scale-100');
+            loginModalContent.classList.add('scale-95');
+        };
+
+        // 사용자의 로그인/로그아웃 상태가 바뀔 때마다 자동으로 실행됩니다.
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                // 로그인 성공 상태 -> 관리자 대시보드 화면 띄우기
+                adminMode.classList.remove('translate-x-full');
+                viewerMode.classList.add('-translate-x-full');
+                // 이메일 비밀번호 입력칸 초기화
+                document.getElementById('email').value = '';
+                document.getElementById('password').value = '';
+            } else {
+                // 로그아웃 상태 -> 일반 열람자(QR) 화면 띄우기
+                adminMode.classList.add('translate-x-full');
+                viewerMode.classList.remove('-translate-x-full');
+            }
+        });
+
+        window.handleLogin = async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                // Firebase 이메일/비밀번호 로그인 API 호출
+                await signInWithEmailAndPassword(auth, email, password);
+                window.closeLoginModal();
+                // 화면 전환은 위의 onAuthStateChanged 옵저버에서 자동으로 처리합니다.
+            } catch (error) {
+                console.error("로그인 에러:", error);
+                alert("로그인에 실패했습니다. 이메일과 비밀번호를 다시 확인해주세요.");
+            }
+        };
+
+        window.handleLogout = async () => {
+            try {
+                await signOut(auth);
+                alert("안전하게 로그아웃 되었습니다.");
+            } catch (error) {
+                console.error("로그아웃 에러:", error);
+            }
+        };
+
+        window.openDocViewer = (title, type) => {
+            viewerTitle.textContent = title;
+            docViewerMode.classList.remove('translate-y-full');
+        };
+
+        window.closeDocViewer = () => {
+            docViewerMode.classList.add('translate-y-full');
+        };
+
+        window.goBackToViewer = () => {
+            // 관리자 로그인 상태는 유지하면서 화면만 열람자 모드로 전환
+            adminMode.classList.add('translate-x-full');
+            viewerMode.classList.remove('-translate-x-full');
+        };
+        
+        // 문서 제목에 맞는 이모티콘 자동 추천 함수
+        const getEmojiForTitle = (title, fileType) => {
+            const t = title.replace(/\s+/g, ''); // 공백 제거 후 검사
+            if(t.includes('임명장') || t.includes('자격증')) return '🏅';
+            if(t.includes('비상') || t.includes('대응')) return '🚨';
+            if(t.includes('도면') || t.includes('배치도') || t.includes('항로')) return '🗺️';
+            if(t.includes('명부') || t.includes('연락처')) return '👥';
+            if(t.includes('매뉴얼') || t.includes('지침') || t.includes('방침')) return '📖';
+            if(t.includes('점검표') || t.includes('서식')) return '📋';
+            if(t.includes('공지')) return '📢';
+            if(t.includes('당직')) return '⏱️';
+            if(t.includes('비품') || t.includes('현황')) return '📦';
+            return fileType === 'pdf' ? '📄' : '🖼️'; // 기본값
+        };
+
+        // ----------------------------------------------------------------
+        // 데이터 실시간 동기화 (Firestore onSnapshot)
+        // ----------------------------------------------------------------
+        const renderDocuments = (docs) => {
+            const publicList = document.getElementById('document-list');
+            const adminList = document.getElementById('admin-doc-list');
+            
+            publicList.innerHTML = '';
+            adminList.innerHTML = '';
+
+            if (docs.length === 0) {
+                publicList.innerHTML = `<div class="col-span-2 text-center py-8 text-slate-400">등록된 문서가 없습니다.</div>`;
+                adminList.innerHTML = `<div class="text-center py-6 text-slate-400 bg-white rounded-xl border border-slate-100">등록된 문서가 없습니다.</div>`;
+                return;
+            }
+
+            docs.forEach(data => {
+                const icon = getEmojiForTitle(data.title, data.fileType);
+                const typeBadgeColor = data.fileType === 'pdf' ? 'bg-blue-100 text-blue-600' : 'bg-green-100 text-green-600';
+                
+                // 과거 1개짜리 데이터와 호환성을 위해 배열로 변환
+                const fileUrls = Array.isArray(data.fileUrls) ? data.fileUrls : (data.fileUrl ? [data.fileUrl] : []);
+                const filePaths = Array.isArray(data.filePaths) ? data.filePaths : (data.filePath ? [data.filePath] : []);
+                
+                // 1. 열람자용 목록 렌더링
+                const pubBtn = document.createElement('button');
+                pubBtn.className = "bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex flex-col items-center justify-center gap-2 hover:bg-brand-50 hover:border-brand-500 transition-colors active:scale-95 relative";
+                
+                // 클릭 이벤트 등록
+                pubBtn.onclick = () => window.openDocViewer(data.title, fileUrls, data.fileType);
+                
+                // 여러 장일 경우 배지 추가
+                const multiBadge = fileUrls.length > 1 ? `<span class="absolute top-2 right-2 bg-slate-100 text-slate-500 text-[10px] px-1.5 py-0.5 rounded font-bold">${fileUrls.length}장</span>` : '';
+                
+                pubBtn.innerHTML = `
+                    ${multiBadge}
+                    <span class="text-3xl mb-1">${icon}</span>
+                    <span class="font-medium text-slate-700 text-sm leading-tight text-center break-keep">${data.title}</span>
+                `;
+                publicList.appendChild(pubBtn);
+
+                // 2. 관리자용 목록 렌더링
+                const adminLi = document.createElement('li');
+                adminLi.className = "bg-white p-3 rounded-xl border border-slate-100 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-0";
+                
+                const safePaths = JSON.stringify(filePaths).replace(/"/g, '&quot;');
+                
+                adminLi.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <span class="${typeBadgeColor} px-2 py-1 rounded-md text-[10px] font-bold uppercase">${data.fileType}</span>
+                        <span class="font-medium text-slate-700 line-clamp-1">${data.title}</span>
+                        ${fileUrls.length > 1 ? `<span class="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded font-bold">${fileUrls.length}장</span>` : ''}
+                    </div>
+                    <div class="flex gap-2 w-full sm:w-auto justify-end">
+                        <button onclick="handleEdit('${data.id}', '${data.title}')" class="text-brand-600 hover:bg-brand-50 px-3 py-1.5 rounded-lg transition-colors text-sm font-medium border border-brand-100">수정</button>
+                        <button onclick="handleDelete('${data.id}', ${safePaths})" class="text-red-500 hover:bg-red-50 px-3 py-1.5 rounded-lg transition-colors text-sm font-medium border border-red-100">삭제</button>
+                    </div>
+                `;
+                adminList.appendChild(adminLi);
+            });
+        };
+
+        // 실시간 리스너 시작 (최신순 정렬)
+        const q = query(collection(db, "bulletins"), orderBy("createdAt", "desc"));
+        onSnapshot(q, (snapshot) => {
+            const docs = [];
+            snapshot.forEach((doc) => {
+                docs.push({ id: doc.id, ...doc.data() });
+            });
+            renderDocuments(docs);
+        });
+
+        // ----------------------------------------------------------------
+        // 파일 업로드 (Storage) & 데이터 저장 (Firestore)
+        // ----------------------------------------------------------------
+        window.handleUpload = async (e) => {
+            e.preventDefault();
+            
+            const titleInput = document.getElementById('doc-title');
+            const fileInput = document.getElementById('file-upload');
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            
+            if (!fileInput.files[0]) {
+                alert("파일을 선택해주세요.");
+                return;
+            }
+
+            const file = fileInput.files[0];
+            const title = titleInput.value;
+            // 확장자 확인 (pdf, jpg, png, jpeg)
+            const fileExt = file.name.split('.').pop().toLowerCase();
+            let fileType = 'image';
+            if(fileExt === 'pdf') fileType = 'pdf';
+            
+            // 로딩 상태 처리
+            const originalBtnText = submitBtn.innerHTML;
+            submitBtn.innerHTML = "업로드 중... ⏳";
+            submitBtn.disabled = true;
+            submitBtn.classList.add('opacity-70');
+
+            try {
+                // 1. Firebase Storage에 파일 업로드
+                const filePath = `bulletins/${Date.now()}_${file.name}`;
+                const storageRef = ref(storage, filePath);
+                await uploadBytes(storageRef, file);
+                
+                // 2. 업로드된 파일의 다운로드 URL 가져오기
+                const downloadURL = await getDownloadURL(storageRef);
+
+                // 3. Firestore에 문서 정보 저장
+                await addDoc(collection(db, "bulletins"), {
+                    title: title,
+                    fileUrl: downloadURL,
+                    filePath: filePath, // 삭제를 위해 경로도 저장
+                    fileType: fileType,
+                    createdAt: serverTimestamp()
+                });
+
+                alert("문서가 성공적으로 등록되었습니다!");
+                // 폼 초기화
+                titleInput.value = '';
+                fileInput.value = '';
+                
+                // 썸네일 미리보기 UI 초기화
+                document.getElementById('upload-prompt').classList.remove('hidden');
+                const previewContainer = document.getElementById('file-preview-container');
+                previewContainer.classList.add('hidden');
+                previewContainer.classList.remove('flex');
+                document.getElementById('image-preview').src = '';
+                document.getElementById('file-name-display').innerHTML = '';
+
+            } catch (error) {
+                console.error("업로드 에러:", error);
+                alert("업로드 실패!\n원인: " + error.message + "\n\n💡 해결법: Firebase 콘솔에서 Storage 및 Firestore의 '규칙(Rules)'을 확인해주세요.");
+            } finally {
+                // 버튼 상태 복구
+                submitBtn.innerHTML = originalBtnText;
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('opacity-70');
+            }
+        };
+
+        // ----------------------------------------------------------------
+        // 데이터 수정 및 삭제
+        // ----------------------------------------------------------------
+        window.handleEdit = async (docId, currentTitle) => {
+            const newTitle = prompt("수정할 문서 제목을 입력하세요.", currentTitle);
+            if (newTitle && newTitle !== currentTitle) {
+                try {
+                    const docRef = doc(db, "bulletins", docId);
+                    await updateDoc(docRef, { title: newTitle });
+                } catch (error) {
+                    console.error("수정 에러:", error);
+                    alert("수정에 실패했습니다.");
+                }
+            }
+        };
+
+        window.handleDelete = async (docId, filePath) => {
+            if (confirm("정말로 이 문서를 삭제하시겠습니까? (복구 불가)")) {
+                try {
+                    // 1. Storage에서 실제 파일 삭제
+                    const fileRef = ref(storage, filePath);
+                    await deleteObject(fileRef);
+                    
+                    // 2. Firestore에서 문서 정보 삭제
+                    const docRef = doc(db, "bulletins", docId);
+                    await deleteDoc(docRef);
+                    
+                } catch (error) {
+                    console.error("삭제 에러:", error);
+                    alert("삭제 중 오류가 발생했습니다.");
+                }
+            }
+        };
+
+        // ----------------------------------------------------------------
+        // 열람자 뷰어 제어 (수정됨: 실제 파일 띄우기)
+        // ----------------------------------------------------------------
+        // 파일 다중 업로드 (Storage) & 데이터 저장 (Firestore)
+        // ----------------------------------------------------------------
+        window.handleUpload = async (e) => {
+            e.preventDefault();
+            
+            const titleInput = document.getElementById('doc-title');
+            const fileInput = document.getElementById('file-upload');
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            
+            if (!fileInput.files || fileInput.files.length === 0) {
+                alert("파일을 선택해주세요.");
+                return;
+            }
+
+            const title = titleInput.value;
+            const files = Array.from(fileInput.files);
+            
+            // 첫 번째 파일 기준으로 타입 결정
+            const firstFileExt = files[0].name.split('.').pop().toLowerCase();
+            let fileType = 'image';
+            if(firstFileExt === 'pdf') fileType = 'pdf';
+            
+            // 로딩 상태 처리
+            const originalBtnText = submitBtn.innerHTML;
+            submitBtn.innerHTML = "업로드 중... ⏳";
+            submitBtn.disabled = true;
+            submitBtn.classList.add('opacity-70');
+
+            try {
+                // 1. 배열에 담긴 파일들을 Storage에 병렬(동시) 업로드
+                const uploadPromises = files.map(async (file) => {
+                    const filePath = `bulletins/${Date.now()}_${Math.floor(Math.random()*1000)}_${file.name}`;
+                    const storageRef = ref(storage, filePath);
+                    await uploadBytes(storageRef, file);
+                    const downloadURL = await getDownloadURL(storageRef);
+                    return { downloadURL, filePath };
+                });
+
+                const uploadedFiles = await Promise.all(uploadPromises);
+
+                const fileUrls = uploadedFiles.map(f => f.downloadURL);
+                const filePaths = uploadedFiles.map(f => f.filePath);
+
+                // 2. Firestore에 다중 파일 경로/URL을 배열 형태로 저장
+                await addDoc(collection(db, "bulletins"), {
+                    title: title,
+                    fileUrls: fileUrls,
+                    filePaths: filePaths,
+                    fileType: fileType,
+                    createdAt: serverTimestamp()
+                });
+
+                alert("문서가 성공적으로 등록되었습니다!");
+                
+                // 폼 초기화
+                titleInput.value = '';
+                fileInput.value = '';
+                
+                // 썸네일 미리보기 UI 초기화
+                document.getElementById('upload-prompt').classList.remove('hidden');
+                const previewContainer = document.getElementById('file-preview-container');
+                previewContainer.classList.add('hidden');
+                previewContainer.classList.remove('flex');
+                document.getElementById('image-preview-grid').innerHTML = '';
+                document.getElementById('file-name-display').innerHTML = '';
+
+            } catch (error) {
+                console.error("업로드 에러:", error);
+                alert("업로드 실패!\n원인: " + error.message);
+            } finally {
+                // 버튼 상태 복구
+                submitBtn.innerHTML = originalBtnText;
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('opacity-70');
+            }
+        };
+
+        // ----------------------------------------------------------------
+        // 데이터 수정 및 다중 파일 삭제
+        // ----------------------------------------------------------------
+        window.handleEdit = async (docId, currentTitle) => {
+            const newTitle = prompt("수정할 문서 제목을 입력하세요.", currentTitle);
+            if (newTitle && newTitle !== currentTitle) {
+                try {
+                    const docRef = doc(db, "bulletins", docId);
+                    await updateDoc(docRef, { title: newTitle });
+                } catch (error) {
+                    console.error("수정 에러:", error);
+                    alert("수정에 실패했습니다.");
+                }
+            }
+        };
+
+        window.handleDelete = async (docId, filePaths) => {
+            if (confirm("정말로 이 문서를 삭제하시겠습니까? (복구 불가)")) {
+                try {
+                    // 1. Storage에 저장된 모든 파일(배열) 순회하며 삭제
+                    const deletePromises = filePaths.map(path => {
+                        const fileRef = ref(storage, path);
+                        return deleteObject(fileRef).catch(e => console.warn('파일 삭제 스킵:', e)); // 이미 없어진 파일은 무시
+                    });
+                    
+                    await Promise.all(deletePromises);
+                    
+                    // 2. Firestore에서 문서 정보 삭제
+                    const docRef = doc(db, "bulletins", docId);
+                    await deleteDoc(docRef);
+                    
+                } catch (error) {
+                    console.error("삭제 에러:", error);
+                    alert("삭제 중 오류가 발생했습니다.");
+                }
+            }
+        };
+
+        // ----------------------------------------------------------------
+        // 열람자 뷰어 제어 (다중 파일 스크롤 뷰 지원)
+        // ----------------------------------------------------------------
+        window.openDocViewer = (title, fileUrls, fileType) => {
+            viewerTitle.textContent = title;
+            const viewerContent = document.getElementById('viewer-content');
+            
+            // 기존 UI를 세로로 스크롤 가능한 구조로 변경
+            viewerContent.className = "w-full h-full overflow-y-auto p-4 bg-slate-200 flex flex-col gap-4 items-center";
+            
+            // 로딩 스피너 표시
+            viewerContent.innerHTML = `<div class="flex flex-col items-center justify-center h-full w-full my-20"><div class="animate-spin text-4xl text-brand-500">⏳</div><p class="mt-4 text-slate-500 font-medium">문서를 불러오는 중입니다...</p></div>`;
+            docViewerMode.classList.remove('translate-y-full');
+
+            // 약간의 딜레이 후 파일들 렌더링
+            setTimeout(() => {
+                viewerContent.innerHTML = ''; // 로딩 삭제
+                
+                fileUrls.forEach(url => {
+                    const itemWrapper = document.createElement('div');
+                    itemWrapper.className = "w-full bg-white shadow-lg rounded-xl overflow-hidden flex justify-center min-h-[300px]";
+                    
+                    if(fileType === 'pdf') {
+                        itemWrapper.innerHTML = `<iframe src="${url}" class="w-full border-none" style="height: 80vh;" title="${title}"></iframe>`;
+                    } else {
+                        itemWrapper.innerHTML = `<img src="${url}" alt="${title}" class="w-full h-auto object-contain">`;
+                    }
+                    viewerContent.appendChild(itemWrapper);
+                });
+                
+                // 여백 확보를 위한 빈 공간 추가
+                const paddingDiv = document.createElement('div');
+                paddingDiv.className = "h-12 w-full flex-shrink-0";
+                viewerContent.appendChild(paddingDiv);
+                
+            }, 300);
+        };
+    </script>
+</body>
+</html>
