@@ -774,6 +774,19 @@
 
         function renderPdf(wrapper, url) {
             wrapper.className += " p-2 pdf-canvas-wrapper bg-slate-200";
+
+            // 상단 바: PDF.js 렌더가 실패해도 항상 원본을 열 수 있는 안전장치
+            const bar = document.createElement('div');
+            bar.className = "flex justify-end mb-2";
+            const openLink = document.createElement('a');
+            openLink.href = url;
+            openLink.target = "_blank";
+            openLink.rel = "noopener";
+            openLink.className = "text-[11px] font-bold text-brand-600 bg-white px-3 py-1.5 rounded-lg border border-brand-100 shadow-sm";
+            openLink.textContent = "↗ 새 탭에서 원본 열기";
+            bar.appendChild(openLink);
+            wrapper.appendChild(bar);
+
             const loadingMsg = document.createElement('p');
             loadingMsg.className = "text-center text-sm font-bold text-slate-500 py-10";
             loadingMsg.textContent = "PDF 렌더링 중...";
@@ -797,8 +810,25 @@
                     wrapper.appendChild(canvas);
                     await page.render({ canvasContext: context, viewport: renderViewport }).promise;
                 }
-            }).catch(() => {
-                loadingMsg.textContent = "PDF 로딩 실패. 손상된 파일일 수 있습니다.";
+            }).catch((err) => {
+                // 대부분 Storage 버킷 CORS 미설정으로 인한 fetch 차단
+                console.error('[PDF 로딩 실패]', err);
+                loadingMsg.remove();
+
+                const box = document.createElement('div');
+                box.className = "flex flex-col items-center gap-3 py-12 px-4 text-center";
+                box.innerHTML = `
+                    <span class="text-3xl">📄</span>
+                    <p class="text-sm font-bold text-slate-600">이 화면에서 PDF를 표시할 수 없습니다.</p>
+                    <p class="text-[11px] text-slate-400 leading-relaxed">Storage 버킷의 CORS 설정이 필요할 수 있습니다.<br>아래 버튼으로 원본을 바로 열어보세요.</p>`;
+                const openBtn = document.createElement('a');
+                openBtn.href = url;
+                openBtn.target = "_blank";
+                openBtn.rel = "noopener";
+                openBtn.className = "mt-1 bg-brand-600 text-white font-bold text-sm px-5 py-3 rounded-xl shadow-md";
+                openBtn.textContent = "새 탭에서 PDF 열기";
+                box.appendChild(openBtn);
+                wrapper.appendChild(box);
             });
         }
 
