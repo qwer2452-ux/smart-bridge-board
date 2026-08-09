@@ -438,12 +438,20 @@
                         const li = document.createElement('li');
                         li.className = "bg-white p-3 rounded-xl border border-slate-100 shadow-sm flex justify-between items-center";
                         const safePaths = JSON.stringify(data.filePaths || []).replace(/"/g, '&quot;');
+                        
+                        const fileUrls = Array.isArray(data.fileUrls) ? data.fileUrls : (data.fileUrl ? [data.fileUrl] : []);
+                        const safeUrls = JSON.stringify(fileUrls).replace(/"/g, '&quot;');
+                        const safeTitle = data.title.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                        
                         li.innerHTML = `
-                            <div class="flex items-center gap-2 overflow-hidden">
-                                <span class="text-lg flex-shrink-0">${getEmojiForTitle(data.title)}</span>
-                                <span class="font-bold text-slate-700 text-sm truncate">${data.title}</span>
+                            <div class="flex items-center gap-2 overflow-hidden flex-1 cursor-pointer group" onclick="window.openDocViewer('${safeTitle}', ${safeUrls})">
+                                <span class="text-lg flex-shrink-0 group-hover:scale-110 transition-transform">${getEmojiForTitle(data.title)}</span>
+                                <span class="font-bold text-slate-700 text-sm truncate group-hover:text-brand-600 transition-colors underline-offset-4 group-hover:underline">${data.title}</span>
                             </div>
-                            <button onclick="handleDelete('${data.id}', ${safePaths})" class="text-red-500 hover:bg-red-50 text-xs font-bold px-3 py-1.5 rounded-lg border border-red-100 flex-shrink-0 transition-colors">삭제</button>
+                            <div class="flex gap-1.5 flex-shrink-0 ml-2">
+                                <button onclick="window.openDocViewer('${safeTitle}', ${safeUrls})" class="text-brand-600 hover:bg-brand-50 text-xs font-bold px-3 py-1.5 rounded-lg border border-brand-100 transition-colors">보기</button>
+                                <button onclick="handleDelete('${data.id}', ${safePaths})" class="text-red-500 hover:bg-red-50 text-xs font-bold px-3 py-1.5 rounded-lg border border-red-100 transition-colors">삭제</button>
+                            </div>
                         `;
                         adminList.appendChild(li);
                     });
