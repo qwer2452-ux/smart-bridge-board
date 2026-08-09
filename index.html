@@ -2,42 +2,44 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <!-- 화면 확대/축소가 가능하도록 maximum-scale=1.0, user-scalable=no 를 제거했습니다. -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    
     <title>Smart Bridge Board</title>
-    <!-- Tailwind CSS CDN -->
+    
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
             theme: {
-                extend: {
-                    colors: { brand: { 50: '#eff6ff', 100: '#dbeafe', 500: '#3b82f6', 600: '#2563eb', 900: '#1e3a8a' } }
-                }
+                extend: { colors: { brand: { 50: '#eff6ff', 100: '#dbeafe', 200: '#bfdbfe', 500: '#3b82f6', 600: '#2563eb', 900: '#1e3a8a' } } }
             }
         };
     </script>
+    
+    <!-- QR Code Generator CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- PDF.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <!-- Panzoom CDN -->
+    <script src="https://unpkg.com/panzoom@9.4.0/dist/panzoom.min.js"></script>
+
     <style>
         ::-webkit-scrollbar { width: 0px; background: transparent; }
         body { -webkit-tap-highlight-color: transparent; user-select: none; overscroll-behavior-y: none; height: 100dvh; overflow: hidden; }
         input, select, textarea { user-select: auto; }
         .hide-view { display: none !important; }
+        .pdf-canvas-wrapper canvas { max-width: 100%; height: auto; margin-bottom: 12px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); border-radius: 8px; }
     </style>
 </head>
 <body class="bg-slate-900 flex justify-center text-slate-800 antialiased selection:bg-brand-200">
 
     <div class="w-full max-w-md bg-white h-[100dvh] shadow-2xl relative overflow-hidden flex flex-col">
 
-        <!-- ========================================== -->
-        <!-- 1. 관리자 전용 로그인 화면 -->
-        <!-- ========================================== -->
         <div id="login-screen" class="flex-col h-full w-full absolute inset-0 bg-slate-50 z-30 hide-view justify-center items-center p-6">
             <div class="bg-white w-full max-w-sm rounded-3xl shadow-xl p-8 border border-slate-100">
                 <div class="text-center mb-8">
                     <div class="bg-brand-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
                         <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-brand-600">
-                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
                         </svg>
                     </div>
                     <h1 class="text-2xl font-bold text-slate-800 tracking-tight">Smart Bridge Board</h1>
@@ -45,22 +47,13 @@
                 </div>
                 
                 <form onsubmit="handleLogin(event)" class="flex flex-col gap-4">
-                    <div>
-                        <input type="email" id="email" required class="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-brand-500 transition-all placeholder-slate-400 font-medium" placeholder="이메일 주소">
-                    </div>
-                    <div>
-                        <input type="password" id="password" required class="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-brand-500 transition-all placeholder-slate-400 font-medium" placeholder="비밀번호">
-                    </div>
-                    <button id="login-btn" type="submit" class="w-full bg-brand-600 text-white font-bold py-4 rounded-xl mt-2 hover:bg-brand-700 shadow-lg shadow-brand-200 transition-all active:scale-95">
-                        접속하기
-                    </button>
+                    <input type="email" id="email" required class="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-brand-500 transition-all font-medium" placeholder="이메일 주소">
+                    <input type="password" id="password" required class="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-brand-500 transition-all font-medium" placeholder="비밀번호">
+                    <button id="login-btn" type="submit" class="w-full bg-brand-600 text-white font-bold py-4 rounded-xl mt-2 hover:bg-brand-700 shadow-lg shadow-brand-200 transition-all active:scale-95">접속하기</button>
                 </form>
             </div>
         </div>
 
-        <!-- ========================================== -->
-        <!-- 2. 관리자 메인 홈 화면 -->
-        <!-- ========================================== -->
         <div id="admin-home-mode" class="flex-col h-full w-full absolute inset-0 bg-slate-50 z-40 hide-view">
             <header class="bg-brand-900 text-white p-6 shadow-md rounded-b-2xl">
                 <div class="flex items-center justify-between mb-1">
@@ -74,24 +67,15 @@
             </main>
         </div>
 
-        <!-- ========================================== -->
-        <!-- 3. 열람자 화면 (QR코드 접속 시) -->
-        <!-- ========================================== -->
         <div id="viewer-mode" class="flex-col h-full w-full absolute inset-0 bg-slate-50 z-20 hide-view">
             <header class="bg-brand-900 text-white p-6 shadow-md rounded-b-2xl">
                 <div class="flex items-center justify-between">
                     <div>
-                        <h1 id="viewer-header-title" class="text-2xl font-bold tracking-tight line-clamp-1">선박명</h1>
+                        <h1 id="viewer-header-title" class="text-2xl font-bold tracking-tight line-clamp-1">로딩 중...</h1>
                         <p class="text-brand-100 text-sm mt-1">QR 선교 종합 게시판</p>
                     </div>
-                    <div class="opacity-90 flex-shrink-0 ml-3">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-brand-200 drop-shadow-md">
-                            <circle cx="12" cy="12" r="8"></circle><circle cx="12" cy="12" r="3"></circle>
-                            <line x1="12" y1="2" x2="12" y2="4"></line><line x1="12" y1="20" x2="12" y2="22"></line>
-                            <line x1="22" y1="12" x2="20" y2="12"></line><line x1="4" y1="12" x2="2" y2="12"></line>
-                            <line x1="19.07" y1="4.93" x2="17.66" y2="6.34"></line><line x1="6.34" y1="17.66" x2="4.93" y2="19.07"></line>
-                            <line x1="19.07" y1="19.07" x2="17.66" y2="17.66"></line><line x1="6.34" y1="6.34" x2="4.93" y2="4.93"></line>
-                        </svg>
+                    <div class="flex flex-col items-end gap-2">
+                        <button id="viewer-admin-back-btn" onclick="goBackToAdminFromViewer()" class="hidden text-[10px] font-bold bg-brand-600 text-white px-2 py-1 rounded shadow">⚙️ 관리자 복귀</button>
                     </div>
                 </div>
             </header>
@@ -100,27 +84,32 @@
             </main>
         </div>
 
-        <!-- ========================================== -->
-        <!-- 4. 관리자 대시보드 (선박 클릭 시 진입) -->
-        <!-- ========================================== -->
         <div id="admin-mode" class="flex-col h-full w-full absolute inset-0 bg-slate-50 z-50 hide-view">
             <header class="bg-slate-800 text-white p-4 shadow-md flex items-center gap-2">
                 <button onclick="goBackToAdminHome()" class="text-slate-300 hover:text-white p-1.5 transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
-                    </svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /></svg>
                 </button>
                 <h1 class="text-lg font-bold">⚙️ 선박 관리 대시보드</h1>
             </header>
             
-            <main class="flex-1 overflow-y-auto p-4 flex flex-col gap-6">
+            <main class="flex-1 overflow-y-auto p-4 flex flex-col gap-6 pb-10">
                 <!-- 선박 관리 섹션 -->
                 <section class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col gap-3">
                     <label class="block text-sm font-extrabold text-brand-900">🚢 현재 관리 중인 선박</label>
                     <select id="admin-ship-select" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800 outline-none focus:ring-2 focus:ring-brand-500"></select>
+                    
                     <div class="flex gap-2 mt-1">
                         <button onclick="editCurrentShip()" class="flex-1 bg-slate-50 text-slate-600 hover:bg-slate-100 font-bold py-2 rounded-lg text-xs transition-colors">✏️ 이름 수정</button>
                         <button onclick="deleteCurrentShip()" class="flex-1 bg-red-50 text-red-500 hover:bg-red-100 font-bold py-2 rounded-lg text-xs transition-colors">🗑️ 배 삭제</button>
+                    </div>
+                    
+                    <div class="border-t border-slate-100 pt-3 mt-1 flex flex-col gap-2">
+                        <span class="text-[11px] font-bold text-slate-400">배포 및 접근 관리</span>
+                        <div class="flex gap-2">
+                            <button onclick="copyViewerLink()" class="flex-1 bg-brand-50 text-brand-600 font-bold py-2 rounded-lg text-xs transition-colors border border-brand-100 flex items-center justify-center gap-1"><span class="text-sm">🔗</span> 링크 복사</button>
+                            <button onclick="showQRCode()" class="flex-1 bg-brand-50 text-brand-600 font-bold py-2 rounded-lg text-xs transition-colors border border-brand-100 flex items-center justify-center gap-1"><span class="text-sm">📱</span> QR 보기</button>
+                        </div>
+                        <button onclick="previewViewer()" class="w-full bg-slate-800 text-white font-bold py-2.5 rounded-lg text-xs transition-colors shadow flex items-center justify-center gap-1 mt-1"><span class="text-sm">👀</span> 열람자 화면 미리보기</button>
                     </div>
                 </section>
 
@@ -130,10 +119,12 @@
                     <form onsubmit="handleUpload(event)" class="flex flex-col gap-3">
                         <input type="text" id="doc-title" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm font-medium" placeholder="문서 제목 (예: 비상대응매뉴얼)">
                         <input type="file" id="file-upload" class="w-full text-sm text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 cursor-pointer" accept=".pdf, image/*" multiple required>
-                        <button type="submit" id="upload-btn" class="w-full bg-slate-800 text-white font-bold py-3.5 rounded-xl hover:bg-slate-900 shadow-md mt-2">등록하기</button>
+                        <p class="text-[10px] text-slate-400 font-medium px-1">최대 10개, 파일당 20MB 제한</p>
+                        <button type="submit" id="upload-btn" class="w-full bg-slate-800 text-white font-bold py-3.5 rounded-xl hover:bg-slate-900 shadow-md mt-1">등록하기</button>
                     </form>
                 </section>
 
+                <!-- 등록된 문서 관리 -->
                 <section class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 mb-6">
                     <h2 class="text-sm font-extrabold text-slate-800 mb-4 border-b border-slate-100 pb-2">📁 등록된 문서 관리</h2>
                     <ul id="admin-doc-list" class="flex flex-col gap-2"></ul>
@@ -141,9 +132,6 @@
             </main>
         </div>
 
-        <!-- ========================================== -->
-        <!-- 5. 문서 뷰어 모달 (핵심 수정 영역) -->
-        <!-- ========================================== -->
         <div id="doc-viewer-mode" class="fixed inset-0 bg-slate-900 z-[100] flex flex-col transform translate-y-full transition-transform duration-300 max-w-md mx-auto">
             <header class="bg-slate-800 border-b border-slate-700 px-4 py-3 flex justify-between items-center z-10 flex-shrink-0">
                 <h2 id="viewer-title" class="text-base font-bold text-white line-clamp-1">문서 로딩중</h2>
@@ -154,7 +142,6 @@
             </main>
         </div>
 
-        <!-- 커스텀 팝업창 -->
         <div id="custom-prompt-modal" class="fixed inset-0 bg-black/60 z-[110] hidden items-center justify-center p-4 backdrop-blur-sm">
             <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl text-center">
                 <h3 id="custom-prompt-msg" class="text-lg font-bold text-slate-800 mb-4 whitespace-pre-line">알림</h3>
@@ -166,14 +153,26 @@
             </div>
         </div>
 
+        <div id="qr-modal" class="fixed inset-0 bg-black/70 z-[120] hidden items-center justify-center p-4 backdrop-blur-sm">
+            <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl flex flex-col items-center">
+                <h3 class="text-lg font-extrabold text-slate-800 mb-1">전용 QR 코드</h3>
+                <p id="qr-ship-label" class="text-sm font-bold text-brand-600 mb-6 bg-brand-50 px-3 py-1 rounded-full"></p>
+                <div class="bg-white p-3 rounded-2xl shadow-inner border border-slate-200 mb-6">
+                    <div id="qrcode-container"></div>
+                </div>
+                <div class="flex w-full gap-3">
+                    <button onclick="closeQRModal()" class="flex-1 bg-slate-100 text-slate-700 py-3.5 rounded-xl font-bold">닫기</button>
+                    <button onclick="downloadQRCode()" class="flex-1 bg-brand-600 text-white py-3.5 rounded-xl font-bold shadow-md flex items-center justify-center gap-1"><span class="text-lg">💾</span> 이미지 저장</button>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <!-- Firebase SDK & 로직 -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, serverTimestamp, query, where, getDocs, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
-        import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
+        import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, serverTimestamp, query, where, getDocs, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAo7hgaaj4NedahYZFEQfZqbIVi596A_XQ",
@@ -189,13 +188,16 @@
         const db = getFirestore(app);
         const storage = getStorage(app);
 
+        // PDF.js 워커 설정
+        window['pdfjs-dist/build/pdf'].GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+
         let allDocuments = [];
-        let dynamicShips = []; // 이제 로컬 저장소가 아닌 클라우드(Firestore)에서 실시간으로 불러옵니다.
-        
+        let dynamicShips = [];
         let unsubscribeShips = null;
         let unsubscribeDocs = null;
+        
+        let qrCodeInstance = null; // QR 객체
 
-        // UI 모달 제어
         let promptCallback = null;
         window.showPrompt = (msg, defaultVal, isAlertOnly, callback) => {
             document.getElementById('custom-prompt-msg').innerText = msg;
@@ -211,109 +213,117 @@
                 input.value = defaultVal || '';
             }
 
-            document.getElementById('custom-prompt-modal').classList.remove('hidden');
-            document.getElementById('custom-prompt-modal').classList.add('flex');
+            const modal = document.getElementById('custom-prompt-modal');
+            modal.classList.remove('hidden'); modal.classList.add('flex');
             if(!isAlertOnly) setTimeout(() => input.focus(), 100);
             promptCallback = callback;
         };
 
         window.closeCustomPrompt = (isOk) => {
-            document.getElementById('custom-prompt-modal').classList.add('hidden');
-            document.getElementById('custom-prompt-modal').classList.remove('flex');
+            const modal = document.getElementById('custom-prompt-modal');
+            modal.classList.add('hidden'); modal.classList.remove('flex');
             if(promptCallback) promptCallback(isOk ? document.getElementById('custom-prompt-input').value : null);
         };
         const showAlert = (msg, callback) => { window.showPrompt(msg, "", true, callback); };
 
-        // 🌟 핵심: 계정별로 데이터 완벽 분리 구독
-        onAuthStateChanged(auth, (user) => {
-            // 계정이 바뀔 때 기존 구독 끊기 (데이터 섞임 방지)
+        onAuthStateChanged(auth, async (user) => {
             if(unsubscribeShips) unsubscribeShips();
             if(unsubscribeDocs) unsubscribeDocs();
 
-            const loginScreen = document.getElementById('login-screen');
-            const viewerMode = document.getElementById('viewer-mode');
-            const adminHomeMode = document.getElementById('admin-home-mode');
-            const adminMode = document.getElementById('admin-mode');
+            const views = ['login-screen', 'viewer-mode', 'admin-home-mode', 'admin-mode'];
+            views.forEach(id => {
+                document.getElementById(id).classList.add('hide-view');
+                document.getElementById(id).classList.remove('flex');
+            });
 
-            loginScreen.classList.add('hide-view'); loginScreen.classList.remove('flex');
-            viewerMode.classList.add('hide-view'); viewerMode.classList.remove('flex');
-            adminHomeMode.classList.add('hide-view'); adminHomeMode.classList.remove('flex');
-            adminMode.classList.add('hide-view'); adminMode.classList.remove('flex');
+            const urlParams = new URLSearchParams(window.location.search);
+            const shipIdParam = urlParams.get('ship');
+            
+            // 💡 URL에 파라미터가 있으면 최우선으로 열람자 모드 진입
+            if (shipIdParam) {
+                window.currentViewerShipId = shipIdParam;
+                document.getElementById('viewer-mode').classList.remove('hide-view');
+                document.getElementById('viewer-mode').classList.add('flex');
+                
+                // 로그인된 상태로 열람화면을 보는 경우 관리자 복귀 버튼 노출
+                document.getElementById('viewer-admin-back-btn').style.display = user ? 'block' : 'none';
 
-            try {
-                const urlParams = new URLSearchParams(window.location.search);
-                window.currentViewerShipId = urlParams.get('ship');
-            } catch(e) { window.currentViewerShipId = null; }
+                try {
+                    const shipSnap = await getDoc(doc(db, "ships", shipIdParam));
+                    if (shipSnap.exists()) {
+                        document.getElementById('viewer-header-title').textContent = shipSnap.data().shipName;
+                    } else {
+                        document.getElementById('viewer-header-title').textContent = "존재하지 않는 선박입니다";
+                    }
+                } catch(e) { document.getElementById('viewer-header-title').textContent = "연결 오류"; }
 
-            if (user) {
-                // 1. 관리자 접속: '자기 자신(ownerId)'이 만든 배만 가져옵니다!
-                adminHomeMode.classList.remove('hide-view');
-                adminHomeMode.classList.add('flex');
-                document.getElementById('email').value = '';
-                document.getElementById('password').value = '';
+                const qDocs = query(collection(db, "bulletins"), where("shipId", "==", shipIdParam));
+                unsubscribeDocs = onSnapshot(qDocs, (snapshot) => {
+                    allDocuments = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    allDocuments.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
+                    renderDocuments();
+                });
+            } 
+            // 파라미터가 없는데 로그인 상태면 관리자 모드
+            else if (user) {
+                document.getElementById('admin-home-mode').classList.remove('hide-view');
+                document.getElementById('admin-home-mode').classList.add('flex');
+                document.getElementById('email').value = ''; document.getElementById('password').value = '';
 
                 const qShips = query(collection(db, "ships"), where("ownerId", "==", user.uid));
                 unsubscribeShips = onSnapshot(qShips, (snapshot) => {
-                    dynamicShips = [];
-                    snapshot.forEach(doc => dynamicShips.push({ id: doc.id, ...doc.data() }));
+                    dynamicShips = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                     dynamicShips.sort((a,b) => (a.createdAt?.toMillis()||0) - (b.createdAt?.toMillis()||0));
                     updateShipSelectOptions();
                     window.renderAdminHome();
                 });
 
-                // 2. 관리자 접속: '자기 자신'이 만든 문서만 가져옵니다!
                 const qDocs = query(collection(db, "bulletins"), where("ownerId", "==", user.uid));
                 unsubscribeDocs = onSnapshot(qDocs, (snapshot) => {
-                    allDocuments = [];
-                    snapshot.forEach(doc => allDocuments.push({ id: doc.id, ...doc.data() }));
+                    allDocuments = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                     allDocuments.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
                     renderDocuments();
                     window.renderAdminHome();
                 });
-
-            } else {
-                if (window.currentViewerShipId) {
-                    // 3. 열람자 접속(QR): 로그인 여부 상관없이 해당 배(shipId)의 문서만 가져옵니다!
-                    viewerMode.classList.remove('hide-view');
-                    viewerMode.classList.add('flex');
-
-                    const qDocs = query(collection(db, "bulletins"), where("shipId", "==", window.currentViewerShipId));
-                    unsubscribeDocs = onSnapshot(qDocs, (snapshot) => {
-                        allDocuments = [];
-                        snapshot.forEach(doc => allDocuments.push({ id: doc.id, ...doc.data() }));
-                        allDocuments.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
-                        renderDocuments();
-                    });
-                } else {
-                    loginScreen.classList.remove('hide-view');
-                    loginScreen.classList.add('flex');
-                }
+            } 
+            // 아무것도 아니면 로그인 화면
+            else {
+                document.getElementById('login-screen').classList.remove('hide-view');
+                document.getElementById('login-screen').classList.add('flex');
             }
         });
 
         window.handleLogin = async (e) => {
             e.preventDefault();
             const btn = document.getElementById('login-btn');
-            const originalText = btn.innerText;
+            const orig = btn.innerText;
             btn.innerText = "확인 중..."; btn.disabled = true;
             try {
                 await signInWithEmailAndPassword(auth, document.getElementById('email').value, document.getElementById('password').value);
+                
+                // 에러 해결: 미리보기(Iframe) 환경에서 주소창 변경 시 발생하는 보안 에러를 무시하도록 처리
+                try {
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                } catch(historyErr) {
+                    console.log("미리보기 환경 주소창 변경 차단됨 (정상 무시)");
+                }
+
             } catch (error) { 
+                console.error(error);
                 showAlert("아이디 또는 비밀번호가 올바르지 않습니다."); 
-            } finally {
-                btn.innerText = originalText; btn.disabled = false;
             }
+            finally { btn.innerText = orig; btn.disabled = false; }
         };
 
         window.handleLogout = async () => { await signOut(auth); };
 
-        window.goToAdminDashboard = (shipName) => {
+        window.goToAdminDashboard = (shipId) => {
             document.getElementById('admin-home-mode').classList.add('hide-view');
             document.getElementById('admin-home-mode').classList.remove('flex');
             document.getElementById('admin-mode').classList.remove('hide-view');
             document.getElementById('admin-mode').classList.add('flex');
             
-            updateShipSelectOptions(shipName);
+            updateShipSelectOptions(shipId);
             renderDocuments();
         };
 
@@ -325,9 +335,14 @@
             window.renderAdminHome();
         };
 
-        const updateShipSelectOptions = (selectedShip = null) => {
+        window.goBackToAdminFromViewer = () => {
+            window.history.replaceState({}, document.title, window.location.pathname);
+            window.location.reload(); // 파라미터 제거 후 리로드하여 관리자 홈으로 이동
+        };
+
+        const updateShipSelectOptions = (selectedShipId = null) => {
             const selectEl = document.getElementById('admin-ship-select');
-            const currentVal = selectedShip || selectEl.value;
+            const currentVal = selectedShipId || selectEl.value;
             
             selectEl.innerHTML = '';
             if (dynamicShips.length === 0) {
@@ -337,80 +352,147 @@
             let found = false;
             dynamicShips.forEach(shipObj => {
                 const opt = document.createElement('option');
-                opt.value = shipObj.shipName;
+                opt.value = shipObj.id; // 식별자로 문서 ID 사용
                 opt.textContent = shipObj.shipName;
-                if(shipObj.shipName === currentVal) { opt.selected = true; found = true; }
+                if(shipObj.id === currentVal) { opt.selected = true; found = true; }
                 selectEl.appendChild(opt);
             });
             if(!found && selectEl.options.length > 0) selectEl.options[0].selected = true;
         };
 
+        // Select 박스 변경 시 문서 즉시 다시 렌더링 (버그 픽스)
+        document.getElementById('admin-ship-select').addEventListener('change', () => {
+            renderDocuments();
+        });
+
         window.addNewShip = () => {
             window.showPrompt("추가할 선박 이름을 입력하세요", "", false, async (shipName) => {
                 if(shipName && shipName.trim()) {
-                    const trimmed = shipName.trim();
-                    if(!dynamicShips.find(s => s.shipName === trimmed)) {
-                        // 클라우드 DB에 '나의 선박'으로 명확히 등록
-                        await addDoc(collection(db, "ships"), {
-                            shipName: trimmed,
-                            ownerId: auth.currentUser.uid,
-                            createdAt: serverTimestamp()
-                        });
-                    } else {
-                        showAlert("이미 등록된 선박입니다.");
-                    }
+                    await addDoc(collection(db, "ships"), {
+                        shipName: shipName.trim(),
+                        ownerId: auth.currentUser.uid,
+                        createdAt: serverTimestamp()
+                    });
                 }
             });
         };
 
         window.editCurrentShip = () => {
-            const currentShipName = document.getElementById('admin-ship-select').value;
-            if(!currentShipName) return showAlert("선택된 선박이 없습니다.");
-            const shipObj = dynamicShips.find(s => s.shipName === currentShipName);
-            if(!shipObj) return;
+            const shipId = document.getElementById('admin-ship-select').value;
+            const shipObj = dynamicShips.find(s => s.id === shipId);
+            if(!shipObj) return showAlert("선택된 선박이 없습니다.");
             
-            window.showPrompt(`'${currentShipName}'의 새 이름 입력:`, currentShipName, false, async (newName) => {
-                if(newName && newName.trim() && newName.trim() !== currentShipName) {
-                    const trimmed = newName.trim();
-                    // 1. 배 이름 업데이트
-                    await updateDoc(doc(db, "ships", shipObj.id), { shipName: trimmed });
-                    
-                    // 2. 해당 배에 올렸던 모든 문서의 배 이름(shipId)도 자동으로 일괄 업데이트
-                    const q = query(collection(db, "bulletins"), where("shipId", "==", currentShipName), where("ownerId", "==", auth.currentUser.uid));
-                    const snaps = await getDocs(q);
-                    snaps.forEach(async (d) => {
-                        await updateDoc(doc(db, "bulletins", d.id), { shipId: trimmed });
-                    });
+            window.showPrompt(`새 이름 입력:`, shipObj.shipName, false, async (newName) => {
+                if(newName && newName.trim() && newName.trim() !== shipObj.shipName) {
+                    await updateDoc(doc(db, "ships", shipId), { shipName: newName.trim() });
+                    // 문서 업데이트는 불필요함 (shipId로 연결되어 있으므로)
                 }
             });
         };
 
         window.deleteCurrentShip = () => {
-            const currentShipName = document.getElementById('admin-ship-select').value;
-            if(!currentShipName) return;
-            const shipObj = dynamicShips.find(s => s.shipName === currentShipName);
+            const shipId = document.getElementById('admin-ship-select').value;
+            const shipObj = dynamicShips.find(s => s.id === shipId);
+            if(!shipObj) return;
 
-            window.showPrompt(`'${currentShipName}' 삭제 시 '삭제' 입력\n(속해있는 모든 문서도 함께 영구 삭제됩니다)`, "", false, async (res) => {
-                if(res === '삭제' && shipObj) {
-                    // 1. 선박 삭제
-                    await deleteDoc(doc(db, "ships", shipObj.id));
-                    
-                    // 2. 엮여있는 모든 문서 및 실제 파일 자동 삭제
-                    const q = query(collection(db, "bulletins"), where("shipId", "==", currentShipName), where("ownerId", "==", auth.currentUser.uid));
-                    const snaps = await getDocs(q);
-                    snaps.forEach(async (d) => {
-                        const data = d.data();
-                        if(data.filePaths) {
-                            for(let path of data.filePaths) {
-                                try { await deleteObject(ref(storage, path)); } catch(e){}
+            window.showPrompt(`'${shipObj.shipName}' 삭제 시 '삭제' 입력\n(모든 문서도 함께 영구 삭제됩니다)`, "", false, async (res) => {
+                if(res === '삭제') {
+                    try {
+                        // 1. 엮여있는 문서 및 파일 삭제 (Promise.all로 병렬/완전 처리)
+                        const q = query(collection(db, "bulletins"), where("shipId", "==", shipId), where("ownerId", "==", auth.currentUser.uid));
+                        const snaps = await getDocs(q);
+                        
+                        await Promise.all(snaps.docs.map(async (d) => {
+                            const data = d.data();
+                            if(data.filePaths) {
+                                await Promise.all(data.filePaths.map(async path => {
+                                    try { await deleteObject(ref(storage, path)); } catch(e){}
+                                }));
                             }
-                        }
-                        await deleteDoc(doc(db, "bulletins", d.id));
-                    });
-                    
-                    window.goBackToAdminHome();
+                            await deleteDoc(doc(db, "bulletins", d.id));
+                        }));
+                        
+                        // 2. 선박 삭제
+                        await deleteDoc(doc(db, "ships", shipId));
+                        window.goBackToAdminHome();
+                    } catch (error) {
+                        showAlert("선박 삭제 중 오류가 발생했습니다: " + error.message);
+                    }
                 }
             });
+        };
+
+        const getShareUrl = () => {
+            const shipId = document.getElementById('admin-ship-select').value;
+            if(!shipId) return null;
+            return window.location.origin + window.location.pathname + "?ship=" + shipId;
+        };
+
+        window.copyViewerLink = () => {
+            const url = getShareUrl();
+            if(!url) return showAlert("선박을 먼저 선택해주세요.");
+            
+            const tempInput = document.createElement("input");
+            document.body.appendChild(tempInput);
+            tempInput.value = url;
+            tempInput.select();
+            document.execCommand("copy");
+            document.body.removeChild(tempInput);
+            showAlert("✅ 열람 전용 링크가 복사되었습니다!");
+        };
+
+        window.showQRCode = () => {
+            const url = getShareUrl();
+            const shipId = document.getElementById('admin-ship-select').value;
+            const shipObj = dynamicShips.find(s => s.id === shipId);
+            if(!url || !shipObj) return showAlert("선박을 먼저 선택해주세요.");
+
+            document.getElementById('qr-ship-label').textContent = shipObj.shipName;
+            const container = document.getElementById('qrcode-container');
+            container.innerHTML = ''; // 기존 캔버스 초기화
+
+            qrCodeInstance = new QRCode(container, {
+                text: url,
+                width: 200,
+                height: 200,
+                colorDark : "#0f172a",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.H
+            });
+
+            const modal = document.getElementById('qr-modal');
+            modal.classList.remove('hidden'); modal.classList.add('flex');
+        };
+
+        window.closeQRModal = () => {
+            document.getElementById('qr-modal').classList.add('hidden');
+            document.getElementById('qr-modal').classList.remove('flex');
+        };
+
+        window.downloadQRCode = () => {
+            const container = document.getElementById('qrcode-container');
+            const imgElement = container.querySelector('img');
+            const canvasElement = container.querySelector('canvas');
+            
+            // QRCode.js는 브라우저에 따라 img나 canvas로 렌더링함
+            const dataUrl = imgElement?.src || canvasElement?.toDataURL("image/png");
+            if(dataUrl && dataUrl.includes("data:image")) {
+                const shipId = document.getElementById('admin-ship-select').value;
+                const shipObj = dynamicShips.find(s => s.id === shipId);
+                const a = document.createElement('a');
+                a.href = dataUrl;
+                a.download = `QR_${shipObj.shipName}.png`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            } else {
+                showAlert("QR 코드 이미지를 생성할 수 없습니다.");
+            }
+        };
+
+        window.previewViewer = () => {
+            const url = getShareUrl();
+            if(url) window.open(url, '_blank');
         };
 
         const getEmojiForTitle = (title) => {
@@ -426,22 +508,24 @@
             grid.innerHTML = '';
 
             dynamicShips.forEach(shipObj => {
-                const ship = shipObj.shipName;
                 const btn = document.createElement('button');
                 btn.className = "bg-white p-5 rounded-3xl shadow-sm border border-slate-100 flex flex-col items-center justify-center gap-3 hover:bg-brand-50 transition-all active:scale-95 h-36";
-                btn.onclick = () => window.goToAdminDashboard(ship);
-                const docCount = allDocuments.filter(d => d.shipId === ship).length;
+                btn.addEventListener('click', () => window.goToAdminDashboard(shipObj.id));
+                
+                const docCount = allDocuments.filter(d => d.shipId === shipObj.id).length;
+                
                 btn.innerHTML = `<span class="text-5xl drop-shadow-sm">🚢</span>
                     <div class="flex flex-col items-center w-full">
-                        <span class="font-bold text-sm text-slate-700 text-center w-full truncate">${ship}</span>
+                        <span class="font-bold text-sm text-slate-700 text-center w-full truncate ship-name-text"></span>
                         <span class="text-[11px] text-brand-600 font-bold bg-brand-50 px-2.5 py-1 rounded-full mt-1.5 border border-brand-100">문서 ${docCount}건</span>
                     </div>`;
+                btn.querySelector('.ship-name-text').textContent = shipObj.shipName;
                 grid.appendChild(btn);
             });
 
             const addBtn = document.createElement('button');
             addBtn.className = "bg-slate-50 p-5 rounded-3xl shadow-sm border-2 border-dashed border-slate-300 flex flex-col items-center justify-center gap-2 hover:bg-slate-100 transition-all active:scale-95 h-36 text-slate-500 hover:text-brand-600";
-            addBtn.onclick = window.addNewShip;
+            addBtn.addEventListener('click', window.addNewShip);
             addBtn.innerHTML = `<div class="bg-white rounded-full w-12 h-12 flex items-center justify-center mb-1 shadow-sm border border-slate-100"><span class="text-2xl font-bold text-slate-400">+</span></div><span class="font-bold text-sm">새 선박 추가</span>`;
             grid.appendChild(addBtn);
         };
@@ -449,18 +533,15 @@
         const renderDocuments = () => {
             const publicList = document.getElementById('document-list');
             const adminList = document.getElementById('admin-doc-list');
-            const viewerTitleEl = document.getElementById('viewer-header-title');
             
             if (publicList) publicList.innerHTML = '';
             if (adminList) adminList.innerHTML = '';
 
             const viewerShipId = window.currentViewerShipId;
             const isAdmin = auth.currentUser !== null;
-            
-            updateShipSelectOptions();
             const adminShipId = document.getElementById('admin-ship-select').value;
 
-            if (isAdmin) {
+            if (isAdmin && adminShipId) {
                 const adminDocs = allDocuments.filter(d => d.shipId === adminShipId);
                 if (adminDocs.length === 0) {
                     adminList.innerHTML = `<div class="text-center py-8 text-slate-400 bg-slate-50 rounded-xl border border-slate-100 text-sm font-medium">문서가 없습니다.</div>`;
@@ -468,26 +549,45 @@
                     adminDocs.forEach(data => {
                         const li = document.createElement('li');
                         li.className = "bg-white p-3 rounded-xl border border-slate-100 shadow-sm flex justify-between items-center";
-                        const safePaths = JSON.stringify(data.filePaths || []).replace(/"/g, '&quot;');
-                        const fileUrls = Array.isArray(data.fileUrls) ? data.fileUrls : (data.fileUrl ? [data.fileUrl] : []);
-                        const safeUrls = JSON.stringify(fileUrls).replace(/"/g, '&quot;');
-                        const safeTitle = data.title.replace(/'/g, "\\'").replace(/"/g, '&quot;');
                         
-                        li.innerHTML = `
-                            <div class="flex items-center gap-2 overflow-hidden flex-1 cursor-pointer group" onclick="window.openDocViewer('${safeTitle}', ${safeUrls})">
-                                <span class="text-lg flex-shrink-0 group-hover:scale-110 transition-transform">${getEmojiForTitle(data.title)}</span>
-                                <span class="font-bold text-slate-700 text-sm truncate group-hover:text-brand-600 transition-colors underline-offset-4 group-hover:underline">${data.title}</span>
-                            </div>
-                            <div class="flex gap-1.5 flex-shrink-0 ml-2">
-                                <button onclick="window.openDocViewer('${safeTitle}', ${safeUrls})" class="text-brand-600 hover:bg-brand-50 text-xs font-bold px-3 py-1.5 rounded-lg border border-brand-100 transition-colors">보기</button>
-                                <button onclick="handleDelete('${data.id}', ${safePaths})" class="text-red-500 hover:bg-red-50 text-xs font-bold px-3 py-1.5 rounded-lg border border-red-100 transition-colors">삭제</button>
-                            </div>
-                        `;
+                        // DOM API로 안전하게 요소 생성 (따옴표 깨짐 방지)
+                        const infoDiv = document.createElement('div');
+                        infoDiv.className = "flex items-center gap-2 overflow-hidden flex-1 cursor-pointer group";
+                        infoDiv.addEventListener('click', () => window.openDocViewer(data.title, data.files));
+                        
+                        const emojiSpan = document.createElement('span');
+                        emojiSpan.className = "text-lg flex-shrink-0 group-hover:scale-110 transition-transform";
+                        emojiSpan.textContent = getEmojiForTitle(data.title);
+                        
+                        const titleSpan = document.createElement('span');
+                        titleSpan.className = "font-bold text-slate-700 text-sm truncate group-hover:text-brand-600 transition-colors underline-offset-4 group-hover:underline";
+                        titleSpan.textContent = data.title;
+                        
+                        infoDiv.appendChild(emojiSpan);
+                        infoDiv.appendChild(titleSpan);
+
+                        const btnDiv = document.createElement('div');
+                        btnDiv.className = "flex gap-1.5 flex-shrink-0 ml-2";
+                        
+                        const viewBtn = document.createElement('button');
+                        viewBtn.className = "text-brand-600 hover:bg-brand-50 text-xs font-bold px-3 py-1.5 rounded-lg border border-brand-100 transition-colors";
+                        viewBtn.textContent = "보기";
+                        viewBtn.addEventListener('click', () => window.openDocViewer(data.title, data.files));
+
+                        const delBtn = document.createElement('button');
+                        delBtn.className = "text-red-500 hover:bg-red-50 text-xs font-bold px-3 py-1.5 rounded-lg border border-red-100 transition-colors";
+                        delBtn.textContent = "삭제";
+                        delBtn.addEventListener('click', () => window.handleDelete(data.id, data.filePaths));
+
+                        btnDiv.appendChild(viewBtn);
+                        btnDiv.appendChild(delBtn);
+
+                        li.appendChild(infoDiv);
+                        li.appendChild(btnDiv);
                         adminList.appendChild(li);
                     });
                 }
             } else if (viewerShipId) {
-                viewerTitleEl.textContent = viewerShipId;
                 const shipDocs = allDocuments.filter(d => d.shipId === viewerShipId);
                 
                 if(shipDocs.length === 0) {
@@ -495,12 +595,13 @@
                 } else {
                     shipDocs.forEach(data => {
                         const btn = document.createElement('button');
-                        btn.className = "bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center gap-3 hover:bg-brand-50 transition-all active:scale-95";
-                        const fileUrls = Array.isArray(data.fileUrls) ? data.fileUrls : (data.fileUrl ? [data.fileUrl] : []);
-                        btn.onclick = () => window.openDocViewer(data.title, fileUrls);
-                        const multiBadge = fileUrls.length > 1 ? `<span class="absolute top-2 right-2 bg-slate-100 text-slate-500 text-[10px] px-1.5 py-0.5 rounded font-bold">${fileUrls.length}장</span>` : '';
+                        btn.className = "bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center gap-3 hover:bg-brand-50 transition-all active:scale-95 relative";
+                        btn.addEventListener('click', () => window.openDocViewer(data.title, data.files));
                         
-                        btn.innerHTML = `${multiBadge}<span class="text-4xl drop-shadow-sm">${getEmojiForTitle(data.title)}</span><span class="font-bold text-sm text-slate-700 text-center leading-tight break-keep">${data.title}</span>`;
+                        const countBadge = data.files.length > 1 ? `<span class="absolute top-2 right-2 bg-slate-100 text-slate-500 text-[10px] px-1.5 py-0.5 rounded font-bold">${data.files.length}장</span>` : '';
+                        btn.innerHTML = `${countBadge}<span class="text-4xl drop-shadow-sm emoji-holder"></span><span class="font-bold text-sm text-slate-700 text-center leading-tight break-keep title-holder"></span>`;
+                        btn.querySelector('.emoji-holder').textContent = getEmojiForTitle(data.title);
+                        btn.querySelector('.title-holder').textContent = data.title;
                         publicList.appendChild(btn);
                     });
                 }
@@ -512,51 +613,91 @@
             const targetShipId = document.getElementById('admin-ship-select').value;
             if(!targetShipId) return showAlert("선박을 먼저 추가해주세요.");
             
-            const btn = document.getElementById('upload-btn');
-            const originalText = btn.innerText;
-            btn.innerText = "서버로 전송 중... ⏳"; btn.disabled = true;
+            const fileInput = document.getElementById('file-upload');
+            const files = Array.from(fileInput.files);
             
+            // 제한 로직
+            if(files.length > 10) return showAlert("최대 10개의 파일만 동시 업로드가 가능합니다.");
+            const MAX_SIZE = 20 * 1024 * 1024; // 20MB
+            if(files.some(f => f.size > MAX_SIZE)) return showAlert("파일당 20MB 이하만 업로드 가능합니다.");
+
+            const btn = document.getElementById('upload-btn');
+            btn.disabled = true;
+
+            const uploadedPaths = [];
+            const fileDataArray = []; // { url, type }
+
             try {
-                const files = Array.from(document.getElementById('file-upload').files);
-                const fileUrls = [], filePaths = [];
-                for(let file of files) {
-                    const filePath = `bulletins/${Date.now()}_${Math.floor(Math.random()*1000)}_${file.name}`;
+                // 직렬 업로드로 진행률 정확히 표시
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    // 타입 명시적 분류
+                    const fileType = file.type.includes('pdf') ? 'pdf' : 'image';
+                    const filePath = `bulletins/${auth.currentUser.uid}/${Date.now()}_${Math.floor(Math.random()*1000)}_${file.name}`;
                     const storageRef = ref(storage, filePath);
-                    await uploadBytes(storageRef, file);
-                    fileUrls.push(await getDownloadURL(storageRef));
-                    filePaths.push(filePath);
+                    
+                    const uploadTask = uploadBytesResumable(storageRef, file);
+                    
+                    await new Promise((resolve, reject) => {
+                        uploadTask.on('state_changed', 
+                            (snapshot) => {
+                                const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                                btn.innerText = `업로드 중... ${Math.round(progress)}% (${i+1}/${files.length})`;
+                            },
+                            (error) => reject(error),
+                            async () => {
+                                const url = await getDownloadURL(uploadTask.snapshot.ref);
+                                uploadedPaths.push(filePath);
+                                fileDataArray.push({ url, type: fileType }); // 🌟 파일 타입 명시적 저장
+                                resolve();
+                            }
+                        );
+                    });
                 }
                 
                 await addDoc(collection(db, "bulletins"), {
-                    title: document.getElementById('doc-title').value,
-                    fileUrls: fileUrls, filePaths: filePaths,
+                    title: document.getElementById('doc-title').value.trim(),
+                    files: fileDataArray,
+                    filePaths: uploadedPaths,
                     shipId: targetShipId, 
-                    ownerId: auth.currentUser.uid, // 🌟 이 문서는 내 소유다! 꼬리표 달기
+                    ownerId: auth.currentUser.uid,
                     createdAt: serverTimestamp()
                 });
                 
                 document.getElementById('doc-title').value = '';
-                document.getElementById('file-upload').value = '';
+                fileInput.value = '';
                 showAlert(`성공적으로 등록되었습니다!`);
-            } catch(error) { showAlert("업로드 실패!"); }
-            
-            btn.innerText = originalText; btn.disabled = false;
+            } catch(error) { 
+                // 업로드 도중 에러 발생 시 고아 파일 롤백
+                await Promise.all(uploadedPaths.map(async path => {
+                    try { await deleteObject(ref(storage, path)); } catch(e){}
+                }));
+                showAlert("업로드 실패: " + error.message); 
+            } finally {
+                btn.innerText = "등록하기";
+                btn.disabled = false;
+            }
         };
 
         window.handleDelete = (docId, filePaths) => {
             window.showPrompt("이 문서를 삭제하시겠습니까?\n(진행하려면 '삭제' 입력)", "", false, async (res) => {
                 if(res === '삭제') {
                     try {
-                        if(filePaths) { for(let path of filePaths) { try { await deleteObject(ref(storage, path)); } catch(e){} } }
+                        if(filePaths) { 
+                            await Promise.all(filePaths.map(async path => {
+                                try { await deleteObject(ref(storage, path)); } catch(e){}
+                            }));
+                        }
                         await deleteDoc(doc(db, "bulletins", docId));
                         showAlert("안전하게 삭제되었습니다.");
-                    } catch(error) {}
+                    } catch(error) {
+                        showAlert("삭제 중 오류가 발생했습니다: " + error.message);
+                    }
                 }
             });
         };
 
-        // 뷰어 관련 로직 (기존과 동일)
-        window.openDocViewer = (title, fileUrls) => {
+        window.openDocViewer = (title, fileDataArray) => {
             const viewerMode = document.getElementById('doc-viewer-mode');
             const viewerTitle = document.getElementById('viewer-title');
             const viewerContent = document.getElementById('viewer-content');
@@ -570,22 +711,63 @@
                 viewerContent.innerHTML = '';
                 scrollArea.scrollTop = 0; 
                 
-                fileUrls.forEach(url => {
-                    const urlLower = url.toLowerCase();
-                    const isPdf = urlLower.includes('.pdf') || urlLower.includes('alt=media') && !urlLower.match(/\.(jpeg|jpg|gif|png)(\?|$)/i);
-                    
+                fileDataArray.forEach(fileData => {
                     const wrapper = document.createElement('div');
-                    wrapper.className = "w-full flex items-center justify-center bg-white rounded-xl shadow-lg overflow-hidden relative";
-                    wrapper.style.cssText = "height: 85vh; width: 100%; touch-action: pan-x pan-y pinch-zoom;";
+                    wrapper.className = "w-full bg-white rounded-xl shadow-lg relative min-h-[50vh] flex flex-col";
+                    
+                    if (fileData.type === 'pdf') {
+                        // PDF.js 렌더링
+                        wrapper.className += " p-2 pdf-canvas-wrapper bg-slate-200";
+                        const loadingMsg = document.createElement('p');
+                        loadingMsg.className = "text-center text-sm font-bold text-slate-500 py-10";
+                        loadingMsg.textContent = "PDF 렌더링 중...";
+                        wrapper.appendChild(loadingMsg);
 
-                    if (isPdf) {
-                        const encodedUrl = encodeURIComponent(url);
-                        const googleViewerUrl = `https://docs.google.com/viewer?url=${encodedUrl}&embedded=true`;
-                        wrapper.innerHTML = `<iframe src="${googleViewerUrl}" class="w-full h-full border-none" style="display:block;"></iframe>
-                            <div class="absolute bottom-2 left-0 right-0 text-center text-xs text-slate-500 bg-white/80 p-1">
-                            문서가 보이지 않으면 <a href="${url}" target="_blank" class="text-brand-600 underline font-bold">여기</a>를 눌러 직접 열어주세요.</div>`;
+                        const pdfjsLib = window['pdfjs-dist/build/pdf'];
+                        pdfjsLib.getDocument(fileData.url).promise.then(async (pdf) => {
+                            wrapper.removeChild(loadingMsg);
+                            for(let i = 1; i <= pdf.numPages; i++) {
+                                const page = await pdf.getPage(i);
+                                const viewport = page.getViewport({ scale: 1.5 }); // 모바일 화면에 적합한 스케일
+                                const canvas = document.createElement('canvas');
+                                const context = canvas.getContext('2d');
+                                canvas.height = viewport.height;
+                                canvas.width = viewport.width;
+                                wrapper.appendChild(canvas);
+                                await page.render({ canvasContext: context, viewport: viewport }).promise;
+                            }
+                        }).catch(err => {
+                            loadingMsg.textContent = "PDF 로딩 실패. 손상된 파일일 수 있습니다.";
+                        });
                     } else {
-                        wrapper.innerHTML = `<img src="${url}" class="w-full h-full" style="object-fit: contain; display:block;">`;
+                        // 이미지 렌더링 (Panzoom 적용)
+                        wrapper.style.height = "85vh";
+                        const imgContainer = document.createElement('div');
+                        imgContainer.className = "w-full h-full overflow-hidden flex items-center justify-center bg-slate-900 rounded-xl relative touch-none";
+                        
+                        const img = document.createElement('img');
+                        img.src = fileData.url;
+                        img.className = "max-w-full max-h-full object-contain cursor-move";
+                        
+                        imgContainer.appendChild(img);
+                        
+                        // 줌 인/아웃 안내 뱃지
+                        const hint = document.createElement('div');
+                        hint.className = "absolute bottom-3 left-1/2 -translate-x-1/2 bg-black/60 text-white text-[10px] px-3 py-1.5 rounded-full pointer-events-none";
+                        hint.textContent = "손가락으로 확대/이동 가능";
+                        imgContainer.appendChild(hint);
+
+                        wrapper.appendChild(imgContainer);
+
+                        // 이미지 로드 후 Panzoom 초기화
+                        img.onload = () => {
+                            panzoom(img, { 
+                                maxZoom: 5, 
+                                minZoom: 1, 
+                                bounds: true, 
+                                boundsPadding: 0.2
+                            });
+                        };
                     }
                     viewerContent.appendChild(wrapper);
                 });
