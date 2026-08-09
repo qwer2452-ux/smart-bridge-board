@@ -2,7 +2,8 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <!-- 화면 확대/축소가 가능하도록 maximum-scale=1.0, user-scalable=no 를 제거했습니다. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     
     <title>Smart Bridge Board</title>
     <!-- Tailwind CSS CDN -->
@@ -562,11 +563,13 @@
                 fileUrls.forEach(url => {
                     const isPdf = url.toLowerCase().includes('.pdf') || url.toLowerCase().includes('alt=media');
                     const wrapper = document.createElement('div');
-                    wrapper.className = "w-full bg-white rounded-lg overflow-hidden shadow-md min-h-[300px] flex items-center justify-center";
+                    // 래퍼 디자인을 깔끔하게 다듬었습니다.
+                    wrapper.className = "w-full flex items-center justify-center p-1 mb-4";
                     if(isPdf && !url.match(/\.(jpeg|jpg|gif|png)$/i)) {
-                        wrapper.innerHTML = `<iframe src="${url}" class="w-full border-none" style="height: 75vh;"></iframe>`;
+                        wrapper.innerHTML = `<iframe src="${url}" class="w-full bg-white shadow-md rounded-lg border-none" style="height: 80vh;"></iframe>`;
                     } else {
-                        wrapper.innerHTML = `<img src="${url}" class="w-full h-auto object-contain">`;
+                        // w-full h-auto 대신 화면 크기에 딱 맞게(max-w-full max-h-[85vh]) 표시하도록 변경했습니다.
+                        wrapper.innerHTML = `<img src="${url}" class="max-w-full max-h-[85vh] object-contain bg-white shadow-md rounded-lg">`;
                     }
                     viewerContent.appendChild(wrapper);
                 });
