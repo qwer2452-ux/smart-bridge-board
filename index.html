@@ -59,7 +59,7 @@
         </div>
 
         <!-- ========================================== -->
-        <!-- 2. 관리자 메인 홈 화면 (새로 추가됨!) -->
+        <!-- 2. 관리자 메인 홈 화면 -->
         <!-- ========================================== -->
         <div id="admin-home-mode" class="flex-col h-full w-full absolute inset-0 bg-slate-50 z-40 hide-view">
             <header class="bg-brand-900 text-white p-6 shadow-md rounded-b-2xl">
@@ -70,9 +70,7 @@
                 <p class="text-brand-100 text-sm font-medium">환영합니다! 관리할 선박을 선택하세요.</p>
             </header>
             <main class="flex-1 overflow-y-auto p-4">
-                <div id="admin-ship-grid" class="grid grid-cols-2 gap-3">
-                    <!-- 선박 목록이 바둑판 배열로 들어갑니다 -->
-                </div>
+                <div id="admin-ship-grid" class="grid grid-cols-2 gap-3"></div>
             </main>
         </div>
 
@@ -107,7 +105,6 @@
         <!-- ========================================== -->
         <div id="admin-mode" class="flex-col h-full w-full absolute inset-0 bg-slate-50 z-50 hide-view">
             <header class="bg-slate-800 text-white p-4 shadow-md flex items-center gap-2">
-                <!-- 뒤로가기 버튼 -->
                 <button onclick="goBackToAdminHome()" class="text-slate-300 hover:text-white p-1.5 transition-colors">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
@@ -117,11 +114,9 @@
             </header>
             
             <main class="flex-1 overflow-y-auto p-4 flex flex-col gap-6">
-                <!-- 선박 선택/관리 섹션 -->
+                <!-- 선박 관리 섹션 -->
                 <section class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col gap-3">
-                    <div class="flex justify-between items-center mb-1">
-                        <label class="block text-sm font-extrabold text-brand-900">🚢 현재 관리 중인 선박</label>
-                    </div>
+                    <label class="block text-sm font-extrabold text-brand-900">🚢 현재 관리 중인 선박</label>
                     <select id="admin-ship-select" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800 outline-none focus:ring-2 focus:ring-brand-500"></select>
                     <div class="flex gap-2 mt-1">
                         <button onclick="editCurrentShip()" class="flex-1 bg-slate-50 text-slate-600 hover:bg-slate-100 font-bold py-2 rounded-lg text-xs transition-colors">✏️ 이름 수정</button>
@@ -133,9 +128,9 @@
                 <section class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
                     <h2 class="text-sm font-extrabold text-slate-800 mb-4 border-b border-slate-100 pb-2">📤 새 문서 등록</h2>
                     <form onsubmit="handleUpload(event)" class="flex flex-col gap-3">
-                        <input type="text" id="doc-title" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-slate-800 text-sm font-medium" placeholder="문서 제목 (예: 비상대응매뉴얼)">
+                        <input type="text" id="doc-title" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm font-medium" placeholder="문서 제목 (예: 비상대응매뉴얼)">
                         <input type="file" id="file-upload" class="w-full text-sm text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 cursor-pointer" accept=".pdf, image/*" multiple required>
-                        <button type="submit" id="upload-btn" class="w-full bg-slate-800 text-white font-bold py-3.5 rounded-xl hover:bg-slate-900 shadow-md transition-all active:scale-95 mt-2">이 선박에 등록하기</button>
+                        <button type="submit" id="upload-btn" class="w-full bg-slate-800 text-white font-bold py-3.5 rounded-xl hover:bg-slate-900 shadow-md mt-2">등록하기</button>
                     </form>
                 </section>
 
@@ -147,15 +142,15 @@
         </div>
 
         <!-- ========================================== -->
-        <!-- 5. 문서 뷰어 모달 -->
+        <!-- 5. 문서 뷰어 모달 (핵심 수정 영역) -->
         <!-- ========================================== -->
         <div id="doc-viewer-mode" class="fixed inset-0 bg-slate-900 z-[100] flex flex-col transform translate-y-full transition-transform duration-300 max-w-md mx-auto">
-            <header class="bg-slate-800 border-b border-slate-700 px-4 py-3 flex justify-between items-center z-10">
+            <header class="bg-slate-800 border-b border-slate-700 px-4 py-3 flex justify-between items-center z-10 flex-shrink-0">
                 <h2 id="viewer-title" class="text-base font-bold text-white line-clamp-1">문서 로딩중</h2>
                 <button onclick="closeDocViewer()" class="bg-slate-700 hover:bg-slate-600 text-white rounded-full w-8 h-8 flex items-center justify-center transition-colors"><span class="font-bold text-lg">&times;</span></button>
             </header>
-            <main class="flex-1 bg-slate-900 overflow-y-auto relative">
-                <div id="viewer-content" class="w-full min-h-full flex flex-col items-center p-2 pb-12 gap-2"></div>
+            <main class="flex-1 bg-slate-900 overflow-y-auto relative p-2" id="viewer-scroll-area">
+                <div id="viewer-content" class="w-full min-h-full flex flex-col items-center justify-center gap-4 pb-10"></div>
             </main>
         </div>
 
@@ -173,7 +168,7 @@
 
     </div>
 
-    <!-- Firebase SDK & 비즈니스 로직 -->
+    <!-- Firebase SDK & 로직 -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
@@ -202,9 +197,7 @@
             window.currentViewerShipId = urlParams.get('ship');
         } catch(e) { window.currentViewerShipId = null; }
 
-        // =====================================
         // UI 모달 제어
-        // =====================================
         let promptCallback = null;
         window.showPrompt = (msg, defaultVal, isAlertOnly, callback) => {
             document.getElementById('custom-prompt-msg').innerText = msg;
@@ -233,9 +226,6 @@
         };
         const showAlert = (msg, callback) => { window.showPrompt(msg, "", true, callback); };
 
-        // =====================================
-        // 인증 상태에 따른 라우팅
-        // =====================================
         onAuthStateChanged(auth, (user) => {
             const loginScreen = document.getElementById('login-screen');
             const viewerMode = document.getElementById('viewer-mode');
@@ -248,12 +238,11 @@
             adminMode.classList.add('hide-view'); adminMode.classList.remove('flex');
 
             if (user) {
-                // 로그인 완료 시 -> 메인 홈 화면으로 (가장 먼저!)
                 adminHomeMode.classList.remove('hide-view');
                 adminHomeMode.classList.add('flex');
                 document.getElementById('email').value = '';
                 document.getElementById('password').value = '';
-                window.renderAdminHome(); // 홈 화면 버튼 렌더링
+                window.renderAdminHome();
             } else {
                 if (window.currentViewerShipId) {
                     viewerMode.classList.remove('hide-view');
@@ -282,9 +271,6 @@
 
         window.handleLogout = async () => { await signOut(auth); };
 
-        // =====================================
-        // 관리자 네비게이션 함수
-        // =====================================
         window.goToAdminDashboard = (shipName) => {
             document.getElementById('admin-home-mode').classList.add('hide-view');
             document.getElementById('admin-home-mode').classList.remove('flex');
@@ -303,9 +289,6 @@
             window.renderAdminHome();
         };
 
-        // =====================================
-        // 선박 관리 로직
-        // =====================================
         const saveShips = () => { localStorage.setItem('smartBridgeShips', JSON.stringify(dynamicShips)); };
 
         const updateShipSelectOptions = (selectedShip = null) => {
@@ -327,7 +310,7 @@
         };
 
         window.addNewShip = () => {
-            window.showPrompt("추가할 선박 이름을 입력하세요 (예: 한라산호)", "", false, (shipName) => {
+            window.showPrompt("추가할 선박 이름을 입력하세요", "", false, (shipName) => {
                 if(shipName && shipName.trim()) {
                     const trimmed = shipName.trim();
                     if(!dynamicShips.includes(trimmed)) {
@@ -360,13 +343,13 @@
         window.deleteCurrentShip = () => {
             const currentShip = document.getElementById('admin-ship-select').value;
             if(!currentShip) return;
-            window.showPrompt(`'${currentShip}' 선박을 삭제할까요?\n(진행하려면 '삭제' 입력)`, "", false, (res) => {
+            window.showPrompt(`'${currentShip}' 삭제 시 '삭제' 입력`, "", false, (res) => {
                 if(res === '삭제') {
                     dynamicShips = dynamicShips.filter(s => s !== currentShip);
                     saveShips();
                     updateShipSelectOptions();
                     renderDocuments();
-                    window.goBackToAdminHome(); // 배 삭제 후엔 무조건 홈으로!
+                    window.goBackToAdminHome();
                 }
             });
         };
@@ -378,9 +361,6 @@
             return '📄';
         };
 
-        // =====================================
-        // 관리자 메인 홈 렌더링
-        // =====================================
         window.renderAdminHome = () => {
             const grid = document.getElementById('admin-ship-grid');
             if (!grid) return;
@@ -388,31 +368,21 @@
 
             dynamicShips.forEach(ship => {
                 const btn = document.createElement('button');
-                btn.className = "bg-white p-5 rounded-3xl shadow-sm border border-slate-100 flex flex-col items-center justify-center gap-3 hover:bg-brand-50 hover:border-brand-300 transition-all active:scale-95 h-36";
+                btn.className = "bg-white p-5 rounded-3xl shadow-sm border border-slate-100 flex flex-col items-center justify-center gap-3 hover:bg-brand-50 transition-all active:scale-95 h-36";
                 btn.onclick = () => window.goToAdminDashboard(ship);
-                
                 const docCount = allDocuments.filter(d => d.shipId === ship).length;
-                
-                btn.innerHTML = `
-                    <span class="text-5xl drop-shadow-sm">🚢</span>
+                btn.innerHTML = `<span class="text-5xl drop-shadow-sm">🚢</span>
                     <div class="flex flex-col items-center w-full">
                         <span class="font-bold text-sm text-slate-700 text-center w-full truncate">${ship}</span>
                         <span class="text-[11px] text-brand-600 font-bold bg-brand-50 px-2.5 py-1 rounded-full mt-1.5 border border-brand-100">문서 ${docCount}건</span>
-                    </div>
-                `;
+                    </div>`;
                 grid.appendChild(btn);
             });
 
-            // 새 선박 추가 버튼
             const addBtn = document.createElement('button');
-            addBtn.className = "bg-slate-50 p-5 rounded-3xl shadow-sm border-2 border-dashed border-slate-300 flex flex-col items-center justify-center gap-2 hover:bg-slate-100 hover:border-brand-400 transition-all active:scale-95 h-36 text-slate-500 hover:text-brand-600";
+            addBtn.className = "bg-slate-50 p-5 rounded-3xl shadow-sm border-2 border-dashed border-slate-300 flex flex-col items-center justify-center gap-2 hover:bg-slate-100 transition-all active:scale-95 h-36 text-slate-500 hover:text-brand-600";
             addBtn.onclick = window.addNewShip;
-            addBtn.innerHTML = `
-                <div class="bg-white rounded-full w-12 h-12 flex items-center justify-center mb-1 shadow-sm border border-slate-100">
-                    <span class="text-2xl font-bold text-slate-400">+</span>
-                </div>
-                <span class="font-bold text-sm">새 선박 추가</span>
-            `;
+            addBtn.innerHTML = `<div class="bg-white rounded-full w-12 h-12 flex items-center justify-center mb-1 shadow-sm border border-slate-100"><span class="text-2xl font-bold text-slate-400">+</span></div><span class="font-bold text-sm">새 선박 추가</span>`;
             grid.appendChild(addBtn);
         };
 
@@ -439,7 +409,6 @@
                         const li = document.createElement('li');
                         li.className = "bg-white p-3 rounded-xl border border-slate-100 shadow-sm flex justify-between items-center";
                         const safePaths = JSON.stringify(data.filePaths || []).replace(/"/g, '&quot;');
-                        
                         const fileUrls = Array.isArray(data.fileUrls) ? data.fileUrls : (data.fileUrl ? [data.fileUrl] : []);
                         const safeUrls = JSON.stringify(fileUrls).replace(/"/g, '&quot;');
                         const safeTitle = data.title.replace(/'/g, "\\'").replace(/"/g, '&quot;');
@@ -468,23 +437,16 @@
                         const btn = document.createElement('button');
                         btn.className = "bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center gap-3 hover:bg-brand-50 transition-all active:scale-95";
                         const fileUrls = Array.isArray(data.fileUrls) ? data.fileUrls : (data.fileUrl ? [data.fileUrl] : []);
-                        
                         btn.onclick = () => window.openDocViewer(data.title, fileUrls);
-                        
                         const multiBadge = fileUrls.length > 1 ? `<span class="absolute top-2 right-2 bg-slate-100 text-slate-500 text-[10px] px-1.5 py-0.5 rounded font-bold">${fileUrls.length}장</span>` : '';
                         
-                        btn.innerHTML = `
-                            ${multiBadge}
-                            <span class="text-4xl drop-shadow-sm">${getEmojiForTitle(data.title)}</span>
-                            <span class="font-bold text-sm text-slate-700 text-center leading-tight break-keep">${data.title}</span>
-                        `;
+                        btn.innerHTML = `${multiBadge}<span class="text-4xl drop-shadow-sm">${getEmojiForTitle(data.title)}</span><span class="font-bold text-sm text-slate-700 text-center leading-tight break-keep">${data.title}</span>`;
                         publicList.appendChild(btn);
                     });
                 }
             }
         };
 
-        // Firestore 실시간 동기화
         onSnapshot(query(collection(db, "bulletins")), (snapshot) => {
             allDocuments = [];
             let dbShips = new Set();
@@ -499,7 +461,7 @@
             dbShips.forEach(ship => { if(!dynamicShips.includes(ship)) dynamicShips.push(ship); });
             saveShips();
             renderDocuments();
-            window.renderAdminHome(); // 새 문서 추가 시 메인화면 문서 카운트도 갱신!
+            window.renderAdminHome();
         });
 
         window.handleUpload = async (e) => {
@@ -548,28 +510,51 @@
             });
         };
 
-        // 문서 열람 뷰어
+        // =====================================
+        // 완벽하게 수정된 PDF 및 이미지 뷰어
+        // =====================================
         window.openDocViewer = (title, fileUrls) => {
             const viewerMode = document.getElementById('doc-viewer-mode');
             const viewerTitle = document.getElementById('viewer-title');
             const viewerContent = document.getElementById('viewer-content');
+            const scrollArea = document.getElementById('viewer-scroll-area');
             
             viewerTitle.textContent = title;
-            viewerContent.innerHTML = `<div class="flex flex-col items-center justify-center mt-20"><div class="animate-spin text-4xl text-brand-500">⏳</div></div>`;
+            viewerContent.innerHTML = `<div class="flex flex-col items-center justify-center my-20"><div class="animate-spin text-4xl text-brand-500">⏳</div></div>`;
             viewerMode.classList.remove('translate-y-full');
 
             setTimeout(() => {
                 viewerContent.innerHTML = '';
+                // 뷰어 오픈 시 스크롤 최상단으로 리셋
+                scrollArea.scrollTop = 0; 
+                
                 fileUrls.forEach(url => {
-                    const isPdf = url.toLowerCase().includes('.pdf') || url.toLowerCase().includes('alt=media');
+                    const urlLower = url.toLowerCase();
+                    // Firebase URL 토큰 뒤에 확장자가 없더라도, 기존 판별 기준을 확장해서 체크
+                    const isPdf = urlLower.includes('.pdf') || urlLower.includes('alt=media') && !urlLower.match(/\.(jpeg|jpg|gif|png)(\?|$)/i);
+                    
                     const wrapper = document.createElement('div');
-                    // 래퍼 디자인을 깔끔하게 다듬었습니다.
-                    wrapper.className = "w-full flex items-center justify-center p-1 mb-4";
-                    if(isPdf && !url.match(/\.(jpeg|jpg|gif|png)$/i)) {
-                        wrapper.innerHTML = `<iframe src="${url}" class="w-full bg-white shadow-md rounded-lg border-none" style="height: 80vh;"></iframe>`;
+                    // 스크롤바가 생기지 않도록 가로세로를 100% 꽉 쥐어줍니다.
+                    wrapper.className = "w-full flex items-center justify-center bg-white rounded-xl shadow-lg overflow-hidden relative";
+                    wrapper.style.cssText = "height: 85vh; width: 100%; touch-action: pan-x pan-y pinch-zoom;";
+
+                    if (isPdf) {
+                        // ⭐️ 핵심: iframe 대신 Google Docs Viewer (또는 Mozilla PDF.js)를 사용하여 모바일/모든 브라우저 환경에서 
+                        // PDF가 일관된 크기로 렌더링되도록 강제합니다. (iframe 직접 렌더링은 기기마다 결과가 다름)
+                        const encodedUrl = encodeURIComponent(url);
+                        // 구글 닥스 뷰어로 PDF를 우회하여 렌더링합니다. 모바일에서 훨씬 깔끔하게 열립니다.
+                        const googleViewerUrl = `https://docs.google.com/viewer?url=${encodedUrl}&embedded=true`;
+                        
+                        wrapper.innerHTML = `<iframe src="${googleViewerUrl}" class="w-full h-full border-none" style="display:block;"></iframe>`;
+                        
+                        // 구글 닥스 뷰어가 실패할 경우를 대비한 폴백 링크 제공
+                        const fallbackText = document.createElement('div');
+                        fallbackText.className = "absolute bottom-2 left-0 right-0 text-center text-xs text-slate-500 bg-white/80 p-1";
+                        fallbackText.innerHTML = `문서가 보이지 않으면 <a href="${url}" target="_blank" class="text-brand-600 underline font-bold">여기</a>를 눌러 직접 열어주세요.`;
+                        wrapper.appendChild(fallbackText);
                     } else {
-                        // w-full h-auto 대신 화면 크기에 딱 맞게(max-w-full max-h-[85vh]) 표시하도록 변경했습니다.
-                        wrapper.innerHTML = `<img src="${url}" class="max-w-full max-h-[85vh] object-contain bg-white shadow-md rounded-lg">`;
+                        // 이미지는 object-fit: contain으로 가로세로 비율 유지하며 화면에 쏙 들어가게 합니다.
+                        wrapper.innerHTML = `<img src="${url}" class="w-full h-full" style="object-fit: contain; display:block;">`;
                     }
                     viewerContent.appendChild(wrapper);
                 });
