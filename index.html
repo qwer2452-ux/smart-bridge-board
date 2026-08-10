@@ -116,6 +116,25 @@
 
                     <div class="border-t border-slate-100 pt-3 mt-1 flex flex-col gap-2">
                         <span class="text-[11px] font-bold text-slate-400">배포 및 접근 관리</span>
+                        <div class="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
+                            <span class="text-[11px] font-bold text-slate-500 shrink-0">QR 배열</span>
+                            <select id="board-cols" class="flex-1 bg-white border border-slate-200 rounded-md px-2 py-1 text-xs font-bold text-slate-700 outline-none">
+                                <option value="2">가로 2칸</option>
+                                <option value="3">가로 3칸</option>
+                                <option value="4">가로 4칸</option>
+                                <option value="5">가로 5칸</option>
+                                <option value="6" selected>가로 6칸</option>
+                            </select>
+                            <span class="text-slate-400 font-bold text-xs">×</span>
+                            <select id="board-rows" class="flex-1 bg-white border border-slate-200 rounded-md px-2 py-1 text-xs font-bold text-slate-700 outline-none">
+                                <option value="1">세로 1줄</option>
+                                <option value="2" selected>세로 2줄</option>
+                                <option value="3">세로 3줄</option>
+                                <option value="4">세로 4줄</option>
+                                <option value="5">세로 5줄</option>
+                                <option value="6">세로 6줄</option>
+                            </select>
+                        </div>
                         <button data-action="preview-board" class="w-full bg-slate-800 text-white font-bold py-2.5 rounded-lg text-xs transition-colors shadow flex items-center justify-center gap-1 mt-1"><span class="text-sm">👀</span> 종합 QR 게시판 미리보기</button>
                     </div>
                 </section>
@@ -217,7 +236,7 @@
                     </div>
 
                     <!-- 중앙: QR 12칸 그리드 (6열 2행 고정) -->
-                    <div id="qr-board-grid" class="grid grid-cols-6 grid-rows-2 gap-5 flex-1 my-6 z-10 relative">
+                    <div id="qr-board-grid" class="grid gap-4 flex-1 min-h-0 my-4 z-10 relative">
                         <!-- JS에서 주입 -->
                     </div>
 
@@ -233,8 +252,8 @@
                         <span class="text-[55px] font-black text-[#003399]" style="font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; line-height: 1.4; padding-top: 4px; padding-bottom: 18px;">휴대폰으로 스캔하여 열람</span>
                     </div>
 
-                    <!-- 우측 하단 선박 마스코트 (높이 제한 + 아래로 내려 QR 침범 방지) -->
-                    <img id="board-mascot-ship" alt="" class="absolute bottom-[6px] right-[8px] w-[150px] h-[150px] object-contain z-20" crossorigin="anonymous">
+                    <!-- 우측 하단 선박 마스코트 (크기 축소 + z-index를 QR보다 뒤로 → QR 절대 안 가림) -->
+                    <img id="board-mascot-ship" alt="" class="absolute bottom-[4px] right-[6px] w-[125px] h-[125px] object-contain z-[5]" crossorigin="anonymous">
 
                     <!-- 하단 물결 무늬 -->
                     <svg class="absolute bottom-0 left-0 w-full h-[80px] z-0 rounded-b-[2.1rem]" viewBox="0 0 1200 80" preserveAspectRatio="none" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -348,6 +367,14 @@
         const getTimestamp = (t) => t ? (typeof t.toMillis === 'function' ? t.toMillis() : 0) : 0;
         const sortByCreatedDesc = (arr) => arr.sort((a, b) => getTimestamp(b.createdAt) - getTimestamp(a.createdAt));
 
+        // 문서 정렬: order(작을수록 위) 우선, order 없으면 생성시간(최신 우선)
+        const docSort = (a, b) => {
+            const oa = (typeof a.order === 'number') ? a.order : Number.MAX_SAFE_INTEGER;
+            const ob = (typeof b.order === 'number') ? b.order : Number.MAX_SAFE_INTEGER;
+            if (oa !== ob) return oa - ob;
+            return getTimestamp(b.createdAt) - getTimestamp(a.createdAt);
+        };
+
         async function enterViewerMode(shipId, user) {
             state.viewerShipId = shipId;
             state.autoOpenDocId = new URLSearchParams(window.location.search).get('doc') || null;
@@ -368,7 +395,7 @@
             const qDocs = query(collection(db, "bulletins"), where("shipId", "==", shipId));
             state.unsub.docs = onSnapshot(qDocs, (snapshot) => {
                 state.documents = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-                sortByCreatedDesc(state.documents);
+                state.documents.sort(docSort);
                 renderDocuments();
                 maybeAutoOpenDoc();
             });
@@ -398,7 +425,7 @@
             const qDocs = query(collection(db, "bulletins"), where("ownerId", "==", user.uid));
             state.unsub.docs = onSnapshot(qDocs, (snapshot) => {
                 state.documents = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-                sortByCreatedDesc(state.documents);
+                state.documents.sort(docSort);
                 renderDocuments();
                 renderAdminHome();
                 refreshDocEditIfOpen();
@@ -424,6 +451,7 @@
         const goToAdminDashboard = (shipId) => {
             hide('admin-home-mode'); show('admin-mode');
             updateShipSelectOptions(shipId);
+            loadBoardLayoutForShip();
             renderDocuments();
         };
         const goBackToAdminHome = () => { hide('admin-mode'); show('admin-home-mode'); renderAdminHome(); };
@@ -453,7 +481,28 @@
             });
             if (!found && selectEl.options.length > 0) selectEl.options[0].selected = true;
         };
-        $('admin-ship-select').addEventListener('change', renderDocuments);
+        // ── 종합 QR 게시판 배열(가로×세로) — 선박별 저장 ──────────────
+        const loadBoardLayoutForShip = () => {
+            const colsEl = $('board-cols'), rowsEl = $('board-rows');
+            if (!colsEl || !rowsEl) return;
+            const ship = state.ships.find(s => s.id === $('admin-ship-select').value);
+            colsEl.value = String(ship?.boardCols || 6);
+            rowsEl.value = String(ship?.boardRows || 2);
+        };
+        const saveBoardLayout = async () => {
+            const shipId = $('admin-ship-select').value;
+            if (!shipId) return;
+            try {
+                await updateDoc(doc(db, "ships", shipId), {
+                    boardCols: parseInt($('board-cols').value, 10),
+                    boardRows: parseInt($('board-rows').value, 10)
+                });
+            } catch (_) {}
+        };
+        $('board-cols').addEventListener('change', saveBoardLayout);
+        $('board-rows').addEventListener('change', saveBoardLayout);
+
+        $('admin-ship-select').addEventListener('change', () => { loadBoardLayoutForShip(); renderDocuments(); });
 
         const addNewShip = () => {
             showPrompt("추가할 선박 이름을 입력하세요", "", false, async (shipName) => {
@@ -475,6 +524,7 @@
                                 filePaths: [],
                                 shipId: shipRef.id,
                                 ownerId: auth.currentUser.uid,
+                                order: idx,
                                 createdAt: Timestamp.fromMillis(baseTime - (idx * 1000))
                             });
                         });
@@ -616,29 +666,38 @@
             const docs = state.documents.filter(d => d.shipId === shipId);
             const grid = $('qr-board-grid');
 
+            // 선택한 배열(가로 cols × 세로 rows). 문서가 많으면 세로줄을 자동으로 늘려 모두 표시
+            const cols = parseInt($('board-cols').value, 10) || 6;
+            const selRows = parseInt($('board-rows').value, 10) || 2;
+            const rows = Math.max(selRows, Math.ceil((docs.length || 1) / cols));
+            const totalSlots = cols * rows;
+            const labelSize = Math.min(46, Math.max(18, Math.round(140 / cols)));
+
+            grid.style.gridTemplateColumns = `repeat(${cols}, minmax(0, 1fr))`;
+            grid.style.gridTemplateRows = `repeat(${rows}, minmax(0, 1fr))`;
+
             $('qr-board-mode').classList.remove('hidden');
             loadBrandingImages(); // 로고/마스코트 주입 (비동기)
-            grid.innerHTML = `<div class="col-span-6 text-center py-20 text-[#003399] font-bold text-3xl">QR 생성 중... 잠시만 기다려주세요.</div>`;
+            grid.innerHTML = `<div style="grid-column:1/-1" class="text-center py-20 text-[#003399] font-bold text-3xl">QR 생성 중... 잠시만 기다려주세요.</div>`;
 
             const cards = await Promise.all(docs.map(async (d) => ({
                 title: d.title, qr: await generateQrDataUrl(getDocShareUrl(shipId, d.id))
             })));
 
-            const totalSlots = 12;
             const slotsHtml = [];
             for (let i = 0; i < totalSlots; i++) {
                 if (i < cards.length) {
                     const c = cards[i];
                     slotsHtml.push(`
-                        <div class="bg-white border-[2px] border-[#1e56b3] rounded-[1.6rem] p-4 flex flex-col items-center justify-between shadow-sm box-border h-full">
-                            <span class="font-bold text-[#003399] text-center text-[22px] w-full truncate mb-2 tracking-tight" style="font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; line-height: 1.7; padding-bottom: 4px;">${c.title}</span>
-                            <img src="${c.qr}" alt="${c.title}" class="w-full aspect-square object-contain">
+                        <div class="bg-white border-[2px] border-[#1e56b3] rounded-[1.6rem] p-3 flex flex-col items-center shadow-sm box-border h-full overflow-hidden">
+                            <span class="font-bold text-[#003399] text-center w-full truncate tracking-tight shrink-0" style="font-family:'Malgun Gothic','Apple SD Gothic Neo',sans-serif; font-size:${labelSize}px; line-height:1.7; padding-bottom:4px;">${c.title}</span>
+                            <div class="flex-1 w-full flex items-center justify-center min-h-0 mt-1"><img src="${c.qr}" alt="${c.title}" class="max-w-full max-h-full object-contain"></div>
                         </div>
                     `);
                 } else {
                     slotsHtml.push(`
-                        <div class="bg-slate-50 border-[2px] border-dashed border-[#1e56b3]/30 rounded-[1.6rem] p-4 flex flex-col items-center justify-center box-border h-full">
-                            <span class="font-bold text-[#1e56b3]/40 text-center text-xl" style="font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;">빈 슬롯</span>
+                        <div class="bg-slate-50 border-[2px] border-dashed border-[#1e56b3]/30 rounded-[1.6rem] flex items-center justify-center box-border h-full">
+                            <span class="font-bold text-[#1e56b3]/40 text-center" style="font-family:'Malgun Gothic',sans-serif; font-size:${Math.max(14, labelSize - 6)}px;">빈 슬롯</span>
                         </div>
                     `);
                 }
@@ -801,18 +860,36 @@
                 adminList.innerHTML = `<div class="text-center py-8 text-slate-400 bg-slate-50 rounded-xl border border-slate-100 text-sm font-medium">문서가 없습니다.</div>`;
                 return;
             }
-            docs.forEach(data => {
+            docs.forEach((data, i) => {
                 const files = Array.isArray(data.files) ? data.files : [];
 
                 const li = document.createElement('li');
-                li.className = "bg-white p-3 rounded-xl border border-slate-100 shadow-sm flex justify-between items-center";
+                li.className = "bg-white p-2.5 rounded-xl border border-slate-100 shadow-sm flex items-center gap-1.5";
 
+                // ▲▼ 순서 변경
+                const reorder = document.createElement('div');
+                reorder.className = "flex flex-col shrink-0";
+                const upBtn = document.createElement('button');
+                upBtn.className = "w-6 h-5 flex items-center justify-center text-slate-400 hover:text-brand-600 disabled:opacity-20 transition-colors";
+                upBtn.disabled = (i === 0);
+                upBtn.title = "위로";
+                upBtn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>`;
+                upBtn.addEventListener('click', () => reorderDoc(data.id, -1));
+                const downBtn = document.createElement('button');
+                downBtn.className = "w-6 h-5 flex items-center justify-center text-slate-400 hover:text-brand-600 disabled:opacity-20 transition-colors";
+                downBtn.disabled = (i === docs.length - 1);
+                downBtn.title = "아래로";
+                downBtn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>`;
+                downBtn.addEventListener('click', () => reorderDoc(data.id, 1));
+                reorder.append(upBtn, downBtn);
+
+                // 정보 (탭하면 미리보기 열림)
                 const infoDiv = document.createElement('div');
                 infoDiv.className = "flex items-center gap-2 overflow-hidden flex-1 cursor-pointer group";
                 infoDiv.addEventListener('click', () => openDocViewer(data.title, files));
 
                 const emojiSpan = document.createElement('span');
-                emojiSpan.className = "text-lg flex-shrink-0 group-hover:scale-110 transition-transform";
+                emojiSpan.className = "text-lg flex-shrink-0";
                 emojiSpan.textContent = getEmojiForTitle(data.title);
 
                 const titleSpan = document.createElement('span');
@@ -833,21 +910,23 @@
                     infoDiv.appendChild(badge);
                 }
 
+                // 수정 / 삭제(쓰레기통)
                 const btnDiv = document.createElement('div');
-                btnDiv.className = "flex gap-1.5 flex-shrink-0 ml-2";
-
-                const viewBtn = document.createElement('button');
-                viewBtn.className = "text-brand-600 hover:bg-brand-50 text-xs font-bold px-3 py-1.5 rounded-lg border border-brand-100 transition-colors";
-                viewBtn.textContent = "미리보기";
-                viewBtn.addEventListener('click', () => openDocViewer(data.title, files));
+                btnDiv.className = "flex gap-1 shrink-0";
 
                 const editBtn = document.createElement('button');
-                editBtn.className = "text-slate-600 hover:bg-slate-100 text-xs font-bold px-3 py-1.5 rounded-lg border border-slate-200 transition-colors";
+                editBtn.className = "text-slate-600 hover:bg-slate-100 text-xs font-bold px-2.5 py-1.5 rounded-lg border border-slate-200 transition-colors";
                 editBtn.textContent = "수정";
                 editBtn.addEventListener('click', () => openDocEdit(data.id));
 
-                btnDiv.append(viewBtn, editBtn);
-                li.append(infoDiv, btnDiv);
+                const delBtn = document.createElement('button');
+                delBtn.className = "text-red-500 hover:bg-red-50 w-8 h-8 flex items-center justify-center rounded-lg border border-red-100 transition-colors";
+                delBtn.title = "문서 삭제";
+                delBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>`;
+                delBtn.addEventListener('click', () => handleDelete(data.id, data.filePaths, data.title));
+
+                btnDiv.append(editBtn, delBtn);
+                li.append(reorder, infoDiv, btnDiv);
                 adminList.appendChild(li);
             });
         }
@@ -944,17 +1023,36 @@
             }
         });
 
-        const handleDelete = (docId, filePaths) => {
-            showPrompt("이 문서를 목록에서 영구 삭제하시겠습니까?\n(진행하려면 '삭제' 입력)", "", false, async (res) => {
-                if (res !== '삭제') return;
+        const handleDelete = (docId, filePaths, title) => {
+            showConfirm(`'${title || '이 문서'}' 문서를 통째로 삭제할까요?\n첨부 파일도 함께 삭제됩니다.`, async (ok) => {
+                if (!ok) return;
                 try {
                     await deleteStorageFiles(filePaths);
                     await deleteDoc(doc(db, "bulletins", docId));
-                    showAlert("안전하게 삭제되었습니다.");
                 } catch (error) {
                     showAlert("삭제 중 오류가 발생했습니다: " + error.message);
                 }
             });
+        };
+
+        // 문서 순서 변경 (▲ -1 위로 / ▼ +1 아래로) → 해당 선박 문서 전체에 order 재부여
+        const reorderDoc = async (docId, direction) => {
+            const shipId = $('admin-ship-select').value;
+            const docs = state.documents.filter(d => d.shipId === shipId); // 이미 docSort 순서
+            const idx = docs.findIndex(d => d.id === docId);
+            if (idx < 0) return;
+            const swapIdx = idx + direction;
+            if (swapIdx < 0 || swapIdx >= docs.length) return;
+
+            const arr = docs.slice();
+            [arr[idx], arr[swapIdx]] = [arr[swapIdx], arr[idx]];
+            try {
+                await Promise.all(arr.map((d, i) =>
+                    d.order === i ? Promise.resolve() : updateDoc(doc(db, "bulletins", d.id), { order: i })
+                ));
+            } catch (e) {
+                showAlert("순서 변경 실패: " + e.message);
+            }
         };
 
         const openDocEdit = (docId) => {
