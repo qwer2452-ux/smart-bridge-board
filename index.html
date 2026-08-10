@@ -156,7 +156,7 @@
         </div>
 
         <!-- 커스텀 알림 프롬프트 -->
-        <div id="custom-prompt-modal" class="fixed inset-0 bg-black/60 z-[110] hidden items-center justify-center p-4 backdrop-blur-sm">
+        <div id="custom-prompt-modal" class="fixed inset-0 bg-black/60 z-[200] hidden items-center justify-center p-4 backdrop-blur-sm">
             <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl text-center">
                 <h3 id="custom-prompt-msg" class="text-lg font-bold text-slate-800 mb-4 whitespace-pre-line">알림</h3>
                 <input type="text" id="custom-prompt-input" class="w-full px-4 py-3 border border-slate-300 rounded-xl mb-5 outline-none focus:ring-2 focus:ring-brand-500 text-center font-medium">
@@ -180,6 +180,7 @@
                     <span class="text-[11px] font-bold text-slate-400">이미지/PDF 추가</span>
                     <input type="file" id="doc-edit-file" class="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 cursor-pointer" accept=".pdf, image/*" multiple>
                     <button data-action="add-doc-files" id="doc-edit-add-btn" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-3 rounded-xl text-sm shadow-md">선택한 파일 추가</button>
+                    <button data-action="close-doc-edit" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 rounded-xl text-sm shadow-md mt-1">완료</button>
                 </div>
             </div>
         </div>
@@ -311,6 +312,16 @@
             if (cb) cb(isOk ? $('custom-prompt-input').value : null);
         };
         const showAlert = (msg, cb) => showPrompt(msg, "", true, cb);
+
+        // 입력 없이 [취소]/[확인]만 있는 간단 확인창 → callback(true/false)
+        const showConfirm = (msg, callback) => {
+            $('custom-prompt-msg').innerText = msg;
+            $('custom-prompt-input').style.display = 'none';
+            $('custom-prompt-cancel').style.display = 'block';
+            const modal = $('custom-prompt-modal');
+            modal.classList.remove('hidden'); modal.classList.add('flex');
+            promptCallback = (val) => callback(val !== null);
+        };
 
         document.querySelectorAll('[data-prompt-close]').forEach(btn => {
             btn.addEventListener('click', () => closeCustomPrompt(btn.dataset.promptClose === 'true'));
@@ -835,12 +846,7 @@
                 editBtn.textContent = "수정";
                 editBtn.addEventListener('click', () => openDocEdit(data.id));
 
-                const delBtn = document.createElement('button');
-                delBtn.className = "text-red-500 hover:bg-red-50 text-xs font-bold px-3 py-1.5 rounded-lg border border-red-100 transition-colors";
-                delBtn.textContent = "삭제";
-                delBtn.addEventListener('click', () => handleDelete(data.id, data.filePaths));
-
-                btnDiv.append(viewBtn, editBtn, delBtn);
+                btnDiv.append(viewBtn, editBtn);
                 li.append(infoDiv, btnDiv);
                 adminList.appendChild(li);
             });
@@ -1008,11 +1014,11 @@
         const removeDocFile = (idx) => {
             const d = state.documents.find(x => x.id === state.editingDocId);
             if (!d) return;
-            const files = Array.isArray(d.files) ? d.files : [];
-            const paths = Array.isArray(d.filePaths) ? d.filePaths : [];
 
-            showPrompt(`${idx + 1}번 파일을 삭제할까요?\n(진행하려면 '삭제' 입력)`, "", false, async (res) => {
-                if (res !== '삭제') return;
+            showConfirm(`${idx + 1}번 파일을 삭제할까요?`, async (ok) => {
+                if (!ok) return;
+                const files = Array.isArray(d.files) ? d.files : [];
+                const paths = Array.isArray(d.filePaths) ? d.filePaths : [];
                 const removedPath = paths[idx];
                 const newFiles = files.filter((_, i) => i !== idx);
                 const newPaths = paths.filter((_, i) => i !== idx);
