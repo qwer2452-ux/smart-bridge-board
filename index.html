@@ -677,8 +677,8 @@
             'close-board': closeQrBoard,
             'close-qr': closeQRModal,
             'download-qr': downloadQRCode,
-            'add-doc-files': addDocFiles,
-            'close-doc-edit': closeDocEdit,
+            'add-doc-files': () => addDocFiles(),
+            'close-doc-edit': () => closeDocEdit(),
         };
         document.addEventListener('click', (e) => {
             const btn = e.target.closest('[data-action]');
