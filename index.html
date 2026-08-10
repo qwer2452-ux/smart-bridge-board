@@ -126,10 +126,6 @@
                             <select id="board-rows" class="flex-1 bg-white border border-slate-200 rounded-md px-2 py-1 text-xs font-bold text-slate-700 outline-none">
                                 <option value="1">세로 1줄</option>
                                 <option value="2" selected>세로 2줄</option>
-                                <option value="3">세로 3줄</option>
-                                <option value="4">세로 4줄</option>
-                                <option value="5">세로 5줄</option>
-                                <option value="6">세로 6줄</option>
                             </select>
                         </div>
                         <button data-action="preview-board" class="w-full bg-slate-800 text-white font-bold py-2.5 rounded-lg text-xs transition-colors shadow flex items-center justify-center gap-1 mt-1"><span class="text-sm">👀</span> 종합 QR 게시판 미리보기</button>
@@ -147,7 +143,10 @@
                 </section>
 
                 <section class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 mb-6">
-                    <h2 class="text-sm font-extrabold text-slate-800 mb-4 border-b border-slate-100 pb-2">📁 등록된 문서 관리</h2>
+                    <h2 class="text-sm font-extrabold text-slate-800 mb-4 border-b border-slate-100 pb-2 flex items-center justify-between">
+                        <span>📁 등록된 문서 관리</span>
+                        <span id="doc-count-label" class="text-[11px] font-bold text-slate-400">최대 12개</span>
+                    </h2>
                     <ul id="admin-doc-list" class="flex flex-col gap-2"></ul>
                 </section>
             </main>
@@ -845,6 +844,8 @@
 
         function renderAdminDocs(adminList, docs) {
             if (!adminList) return;
+            const countLabel = $('doc-count-label');
+            if (countLabel) countLabel.textContent = `${docs.length} / ${MAX_DOCS}`;
             if (docs.length === 0) {
                 adminList.innerHTML = `<div class="text-center py-8 text-slate-400 bg-slate-50 rounded-xl border border-slate-100 text-sm font-medium">문서가 없습니다.</div>`;
                 return;
@@ -949,11 +950,16 @@
 
         const MAX_FILES = 10;
         const MAX_SIZE = 20 * 1024 * 1024; // 20MB
+        const MAX_DOCS = 12; // 선박당 최대 문서 수
 
         $('upload-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const targetShipId = $('admin-ship-select').value;
             if (!targetShipId) return showAlert("선박을 먼저 추가해주세요.");
+
+            if (state.documents.filter(d => d.shipId === targetShipId).length >= MAX_DOCS) {
+                return showAlert(`문서는 선박당 최대 ${MAX_DOCS}개까지 등록할 수 있습니다.\n기존 문서를 삭제한 뒤 다시 등록해주세요.`);
+            }
 
             const fileInput = $('file-upload');
             const files = Array.from(fileInput.files);
@@ -1332,11 +1338,4 @@
         $('doc-viewer-close').addEventListener('click', closeDocViewer);
 
         document.addEventListener('keydown', (e) => {
-            if (e.key !== 'Escape') return;
-            if (!$('doc-edit-modal').classList.contains('hidden')) closeDocEdit();
-            else if (!$('qr-board-mode').classList.contains('hidden')) closeQrBoard();
-            else if (!$('doc-viewer-mode').classList.contains('translate-y-full')) closeDocViewer();
-        });
-    </script>
-</body>
-</html>
+            if (e.key !=
