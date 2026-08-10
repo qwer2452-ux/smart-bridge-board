@@ -28,6 +28,19 @@
         input, select, textarea { user-select: auto; }
         .hide-view { display: none !important; }
         .pdf-canvas-wrapper canvas { max-width: 100%; height: auto; margin-bottom: 12px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); border-radius: 8px; }
+
+        /* 종합 QR 게시판 인쇄 전용 스타일 (가로 방향으로 넓게 펼침) */
+        @media print {
+            @page { size: A4 landscape; margin: 8mm; }
+            html, body { height: auto; overflow: visible; background: #fff; }
+            body * { visibility: hidden; }
+            #qr-board-mode, #qr-board-mode * { visibility: visible; }
+            #qr-board-mode { position: absolute; left: 0; top: 0; width: 100%; background: #fff; overflow: visible; }
+            .no-print { display: none !important; }
+            /* 가로 용지에 QR을 6열로 넓게 배치 */
+            #qr-board-grid { grid-template-columns: repeat(6, minmax(0, 1fr)) !important; }
+            .break-inside-avoid { break-inside: avoid; }
+        }
     </style>
 </head>
 <body class="bg-slate-900 flex justify-center text-slate-800 antialiased selection:bg-brand-200">
@@ -115,11 +128,8 @@
 
                     <div class="border-t border-slate-100 pt-3 mt-1 flex flex-col gap-2">
                         <span class="text-[11px] font-bold text-slate-400">배포 및 접근 관리</span>
-                        <div class="flex gap-2">
-                            <button data-action="copy-link" class="flex-1 bg-brand-50 text-brand-600 font-bold py-2 rounded-lg text-xs transition-colors border border-brand-100 flex items-center justify-center gap-1"><span class="text-sm">🔗</span> 링크 복사</button>
-                            <button data-action="show-qr" class="flex-1 bg-brand-50 text-brand-600 font-bold py-2 rounded-lg text-xs transition-colors border border-brand-100 flex items-center justify-center gap-1"><span class="text-sm">📱</span> QR 보기</button>
-                        </div>
-                        <button data-action="preview" class="w-full bg-slate-800 text-white font-bold py-2.5 rounded-lg text-xs transition-colors shadow flex items-center justify-center gap-1 mt-1"><span class="text-sm">👀</span> 열람자 화면 미리보기</button>
+                        <button data-action="preview-board" class="w-full bg-slate-800 text-white font-bold py-2.5 rounded-lg text-xs transition-colors shadow flex items-center justify-center gap-1"><span class="text-sm">👀</span> 종합 QR 미리보기</button>
+                        <button data-action="open-board" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-2.5 rounded-lg text-xs transition-colors shadow flex items-center justify-center gap-1"><span class="text-sm">🖨️</span> 종합 QR 게시판 만들기 (인쇄용)</button>
                     </div>
                 </section>
 
@@ -163,6 +173,22 @@
             </div>
         </div>
 
+        <div id="doc-edit-modal" class="fixed inset-0 bg-black/60 z-[115] hidden items-center justify-center p-4 backdrop-blur-sm">
+            <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl max-h-[85vh] flex flex-col">
+                <div class="flex items-center justify-between mb-1">
+                    <h3 class="text-base font-extrabold text-slate-800">🖼️ 이미지 관리</h3>
+                    <button data-action="close-doc-edit" class="bg-slate-100 hover:bg-slate-200 rounded-full w-8 h-8 flex items-center justify-center text-slate-500 font-bold text-lg">&times;</button>
+                </div>
+                <p id="doc-edit-title" class="text-sm font-bold text-brand-600 mb-3 truncate"></p>
+                <div id="doc-edit-grid" class="grid grid-cols-3 gap-2 overflow-y-auto flex-1 mb-4 min-h-[80px]"></div>
+                <div class="border-t border-slate-100 pt-4 flex flex-col gap-2">
+                    <span class="text-[11px] font-bold text-slate-400">이미지/PDF 추가</span>
+                    <input type="file" id="doc-edit-file" class="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 cursor-pointer" accept=".pdf, image/*" multiple>
+                    <button data-action="add-doc-files" id="doc-edit-add-btn" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-3 rounded-xl text-sm shadow-md">선택한 파일 추가</button>
+                </div>
+            </div>
+        </div>
+
         <div id="qr-modal" class="fixed inset-0 bg-black/70 z-[120] hidden items-center justify-center p-4 backdrop-blur-sm">
             <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl flex flex-col items-center">
                 <h3 class="text-lg font-extrabold text-slate-800 mb-1">전용 QR 코드</h3>
@@ -173,6 +199,42 @@
                 <div class="flex w-full gap-3">
                     <button data-action="close-qr" class="flex-1 bg-slate-100 text-slate-700 py-3.5 rounded-xl font-bold">닫기</button>
                     <button data-action="download-qr" class="flex-1 bg-brand-600 text-white py-3.5 rounded-xl font-bold shadow-md flex items-center justify-center gap-1"><span class="text-lg">💾</span> 이미지 저장</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 종합 QR 게시판 (인쇄용 포스터) -->
+        <div id="qr-board-mode" class="hidden fixed inset-0 z-[130] bg-white overflow-y-auto">
+            <!-- 상단 툴바 (인쇄 시 숨김) -->
+            <div class="no-print sticky top-0 z-10 flex items-center justify-between gap-2 bg-slate-800 text-white px-4 py-3 shadow">
+                <span class="font-bold text-sm">🖨️ 종합 QR 게시판 미리보기</span>
+                <div class="flex gap-2">
+                    <button data-action="print-board" class="bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold px-3 py-2 rounded-lg">인쇄 / PDF 저장</button>
+                    <button data-action="close-board" class="bg-slate-600 hover:bg-slate-500 text-white text-xs font-bold px-3 py-2 rounded-lg">닫기</button>
+                </div>
+            </div>
+
+            <!-- 실제 인쇄 영역 (공유 이미지 양식) -->
+            <div class="max-w-6xl mx-auto p-3 md:p-6">
+                <div class="board-poster relative overflow-hidden bg-white border-[5px] border-brand-600 rounded-[2rem] p-5 md:p-8">
+                    <!-- 헤더: 로고 · 제목 · 캐릭터 -->
+                    <div class="flex items-center justify-between gap-3 mb-6">
+                        <div class="board-logo shrink-0 w-16 h-16 md:w-24 md:h-24 rounded-full border-2 border-dashed border-brand-200 flex items-center justify-center text-[9px] md:text-[11px] font-bold text-slate-400 text-center leading-tight overflow-hidden">로고<br>넣는 곳</div>
+                        <h1 id="qr-board-title" class="flex-1 text-center text-2xl md:text-5xl font-black text-brand-600 tracking-tight break-keep">조타실 QR 자료 게시판</h1>
+                        <div class="board-mascot shrink-0 w-16 h-16 md:w-24 md:h-24 rounded-2xl border-2 border-dashed border-brand-200 flex items-center justify-center text-[9px] md:text-[11px] font-bold text-slate-400 text-center leading-tight overflow-hidden">캐릭터<br>넣는 곳</div>
+                    </div>
+                    <!-- QR 격자 -->
+                    <div id="qr-board-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 md:gap-4"></div>
+                    <!-- 하단 안내 문구 -->
+                    <div class="flex items-center justify-center gap-3 mt-8 text-brand-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></svg>
+                        <span class="text-xl md:text-4xl font-black">휴대폰으로 스캔하여 열람</span>
+                    </div>
+                    <!-- 파도 장식 -->
+                    <svg class="w-full mt-3 -mb-2" viewBox="0 0 1200 70" preserveAspectRatio="none" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M0,35 C150,5 300,60 450,35 C600,10 750,60 900,35 C1050,10 1200,55 1200,40 L1200,70 L0,70 Z" fill="#bfdbfe"/>
+                        <path d="M0,45 C150,20 300,65 450,45 C600,22 750,65 900,45 C1050,22 1200,60 1200,48 L1200,70 L0,70 Z" fill="#3b82f6" opacity="0.55"/>
+                    </svg>
                 </div>
             </div>
         </div>
@@ -214,6 +276,8 @@
             documents: [],
             ships: [],
             viewerShipId: null,
+            autoOpenDocId: null,   // QR 딥링크(?doc=)로 자동 열 문서 ID
+            editingDocId: null,    // 이미지 관리(수정) 모달에서 편집 중인 문서 ID
             qrInstance: null,
             panzooms: [],          // 열린 문서 뷰어의 panzoom 인스턴스 (닫을 때 해제)
             unsub: { ships: null, docs: null },
@@ -282,6 +346,8 @@
 
         async function enterViewerMode(shipId, user) {
             state.viewerShipId = shipId;
+            // QR 딥링크로 특정 문서를 지정해 스캔한 경우, 문서 로드 후 자동으로 열기
+            state.autoOpenDocId = new URLSearchParams(window.location.search).get('doc') || null;
             showScreen('viewer-mode');
 
             // 로그인 상태로 열람 화면을 보는 경우 '관리자 복귀' 버튼 노출
@@ -302,7 +368,18 @@
                 state.documents = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
                 sortByCreatedDesc(state.documents);
                 renderDocuments();
+                maybeAutoOpenDoc();
             });
+        }
+
+        // QR 딥링크(?doc=)로 지정된 문서를 한 번만 자동으로 연다
+        function maybeAutoOpenDoc() {
+            if (!state.autoOpenDocId) return;
+            const target = state.documents.find(d => d.id === state.autoOpenDocId);
+            if (target) {
+                openDocViewer(target.title, Array.isArray(target.files) ? target.files : []);
+                state.autoOpenDocId = null;
+            }
         }
 
         function enterAdminMode(user) {
@@ -323,6 +400,7 @@
                 sortByCreatedDesc(state.documents);
                 renderDocuments();
                 renderAdminHome();
+                refreshDocEditIfOpen();
             });
         }
 
@@ -518,15 +596,89 @@
             if (url) window.open(url, '_blank');
         };
 
+        /* ── 종합 QR 게시판 (문서별 개별 QR 포스터) ──────────────────── */
+        // 문서 단위 딥링크: 스캔하면 해당 문서가 바로 열린다
+        const getDocShareUrl = (shipId, docId) =>
+            window.location.origin + window.location.pathname + `?ship=${shipId}&doc=${docId}`;
+
+        // QRCode.js로 QR을 생성해 data URL로 반환 (img/canvas 모두 대응)
+        const generateQrDataUrl = (text) => new Promise((resolve) => {
+            const tmp = document.createElement('div');
+            tmp.style.position = 'fixed';
+            tmp.style.left = '-9999px';
+            document.body.appendChild(tmp);
+            new QRCode(tmp, {
+                text, width: 300, height: 300,
+                colorDark: "#0f172a", colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+            const pick = () => {
+                const url = tmp.querySelector('img')?.src
+                    || tmp.querySelector('canvas')?.toDataURL('image/png');
+                if (url && url.startsWith('data:image')) {
+                    tmp.remove();
+                    resolve(url);
+                } else {
+                    setTimeout(pick, 30); // 렌더가 비동기라 잠깐 대기
+                }
+            };
+            pick();
+        });
+
+        const openQrBoard = async (autoPrint = false) => {
+            const shipId = $('admin-ship-select').value;
+            const shipObj = state.ships.find(s => s.id === shipId);
+            if (!shipObj) return showAlert("선박을 먼저 선택해주세요.");
+
+            const docs = state.documents.filter(d => d.shipId === shipId);
+            if (docs.length === 0) return showAlert("등록된 문서가 없습니다.\n먼저 문서를 등록해주세요.");
+
+            $('qr-board-title').textContent = `${shipObj.shipName} · 조타실 QR 자료 게시판`;
+            const grid = $('qr-board-grid');
+            grid.innerHTML = `<div class="col-span-full text-center py-16 text-slate-400 font-bold">QR 생성 중...</div>`;
+            $('qr-board-mode').classList.remove('hidden');
+
+            const cards = await Promise.all(docs.map(async (d) => ({
+                title: d.title,
+                qr: await generateQrDataUrl(getDocShareUrl(shipId, d.id))
+            })));
+
+            grid.innerHTML = '';
+            cards.forEach(c => {
+                const card = document.createElement('div');
+                card.className = "bg-white border-2 border-brand-200 rounded-2xl p-3 flex flex-col items-center gap-2 break-inside-avoid";
+
+                const label = document.createElement('span');
+                label.className = "font-bold text-brand-900 text-center leading-tight break-keep text-sm md:text-base";
+                label.textContent = c.title;
+
+                const img = document.createElement('img');
+                img.src = c.qr;
+                img.alt = c.title + " QR";
+                img.className = "w-full aspect-square";
+
+                card.append(label, img);
+                grid.appendChild(card);
+            });
+
+            // '인쇄용' 버튼으로 열면 렌더 완료 후 바로 인쇄창 열기
+            if (autoPrint) setTimeout(() => window.print(), 400);
+        };
+        const closeQrBoard = () => $('qr-board-mode').classList.add('hidden');
+        const printQrBoard = () => window.print();
+
         // admin/QR 영역의 data-action 버튼 위임 처리
         const ACTIONS = {
             'edit-ship': editCurrentShip,
             'delete-ship': deleteCurrentShip,
-            'copy-link': copyViewerLink,
-            'show-qr': showQRCode,
-            'preview': previewViewer,
+            'preview-board': () => openQrBoard(false),  // 👀 미리보기 (인쇄 안 함)
+            'open-board': () => openQrBoard(true),       // 🖨️ 인쇄용 (바로 인쇄창)
+            'print-board': printQrBoard,
+            'close-board': closeQrBoard,
             'close-qr': closeQRModal,
             'download-qr': downloadQRCode,
+            'add-doc-files': addDocFiles,
+            'close-doc-edit': closeDocEdit,
         };
         document.addEventListener('click', (e) => {
             const btn = e.target.closest('[data-action]');
@@ -612,6 +764,14 @@
 
                 infoDiv.append(emojiSpan, titleSpan);
 
+                // 여러 장 이미지가 담긴 문서면 'N장' 배지 표시
+                if (files.length > 1) {
+                    const badge = document.createElement('span');
+                    badge.className = "shrink-0 bg-slate-100 text-slate-500 text-[10px] font-bold px-1.5 py-0.5 rounded";
+                    badge.textContent = files.length + '장';
+                    infoDiv.appendChild(badge);
+                }
+
                 const btnDiv = document.createElement('div');
                 btnDiv.className = "flex gap-1.5 flex-shrink-0 ml-2";
 
@@ -620,12 +780,17 @@
                 viewBtn.textContent = "보기";
                 viewBtn.addEventListener('click', () => openDocViewer(data.title, files));
 
+                const editBtn = document.createElement('button');
+                editBtn.className = "text-slate-600 hover:bg-slate-100 text-xs font-bold px-3 py-1.5 rounded-lg border border-slate-200 transition-colors";
+                editBtn.textContent = "수정";
+                editBtn.addEventListener('click', () => openDocEdit(data.id));
+
                 const delBtn = document.createElement('button');
                 delBtn.className = "text-red-500 hover:bg-red-50 text-xs font-bold px-3 py-1.5 rounded-lg border border-red-100 transition-colors";
                 delBtn.textContent = "삭제";
                 delBtn.addEventListener('click', () => handleDelete(data.id, data.filePaths));
 
-                btnDiv.append(viewBtn, delBtn);
+                btnDiv.append(viewBtn, editBtn, delBtn);
                 li.append(infoDiv, btnDiv);
                 adminList.appendChild(li);
             });
@@ -733,6 +898,137 @@
                     showAlert("삭제 중 오류가 발생했습니다: " + error.message);
                 }
             });
+        };
+
+        /* ── 이미지 관리(추가/개별 삭제) ─────────────────────────────── */
+        const openDocEdit = (docId) => {
+            state.editingDocId = docId;
+            renderDocEdit();
+            const modal = $('doc-edit-modal');
+            modal.classList.remove('hidden'); modal.classList.add('flex');
+        };
+        const closeDocEdit = () => {
+            state.editingDocId = null;
+            $('doc-edit-file').value = '';
+            const modal = $('doc-edit-modal');
+            modal.classList.add('hidden'); modal.classList.remove('flex');
+        };
+        // onSnapshot으로 문서가 갱신되면 열려 있는 모달도 최신 상태로 다시 그린다
+        const refreshDocEditIfOpen = () => {
+            if (state.editingDocId && !$('doc-edit-modal').classList.contains('hidden')) renderDocEdit();
+        };
+
+        const renderDocEdit = () => {
+            const d = state.documents.find(x => x.id === state.editingDocId);
+            if (!d) return closeDocEdit();
+            const files = Array.isArray(d.files) ? d.files : [];
+
+            $('doc-edit-title').textContent = d.title;
+            const grid = $('doc-edit-grid');
+            grid.innerHTML = '';
+
+            if (files.length === 0) {
+                grid.innerHTML = `<div class="col-span-3 text-center text-slate-400 text-xs py-6">등록된 파일이 없습니다.</div>`;
+                return;
+            }
+            files.forEach((f, idx) => {
+                const cell = document.createElement('div');
+                cell.className = "relative aspect-square rounded-lg overflow-hidden border border-slate-200 bg-slate-100 flex items-center justify-center";
+
+                if (f.type === 'pdf') {
+                    cell.innerHTML = `<span class="text-2xl">📄</span>`;
+                } else {
+                    const img = document.createElement('img');
+                    img.src = f.url;
+                    img.className = "w-full h-full object-cover";
+                    cell.appendChild(img);
+                }
+                const numBadge = document.createElement('span');
+                numBadge.className = "absolute bottom-1 left-1 bg-black/60 text-white text-[9px] font-bold px-1.5 py-0.5 rounded";
+                numBadge.textContent = (idx + 1);
+                cell.appendChild(numBadge);
+
+                const del = document.createElement('button');
+                del.className = "absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold shadow";
+                del.textContent = '×';
+                del.addEventListener('click', () => removeDocFile(idx));
+                cell.appendChild(del);
+
+                grid.appendChild(cell);
+            });
+        };
+
+        const removeDocFile = (idx) => {
+            const d = state.documents.find(x => x.id === state.editingDocId);
+            if (!d) return;
+            const files = Array.isArray(d.files) ? d.files : [];
+            const paths = Array.isArray(d.filePaths) ? d.filePaths : [];
+            if (files.length <= 1) {
+                return showAlert("최소 1개의 파일은 남아야 합니다.\n문서 전체를 없애려면 목록의 '삭제'를 이용하세요.");
+            }
+            showPrompt(`${idx + 1}번 파일을 삭제할까요?\n(진행하려면 '삭제' 입력)`, "", false, async (res) => {
+                if (res !== '삭제') return;
+                const removedPath = paths[idx];
+                const newFiles = files.filter((_, i) => i !== idx);
+                const newPaths = paths.filter((_, i) => i !== idx);
+                try {
+                    await updateDoc(doc(db, "bulletins", d.id), { files: newFiles, filePaths: newPaths });
+                    if (removedPath) { try { await deleteObject(ref(storage, removedPath)); } catch (_) {} }
+                    // onSnapshot이 모달을 자동 갱신
+                } catch (e) {
+                    showAlert("삭제 실패: " + e.message);
+                }
+            });
+        };
+
+        const addDocFiles = async () => {
+            const d = state.documents.find(x => x.id === state.editingDocId);
+            if (!d) return;
+            const input = $('doc-edit-file');
+            const files = Array.from(input.files);
+            if (files.length === 0) return showAlert("추가할 파일을 선택해주세요.");
+
+            const existing = Array.isArray(d.files) ? d.files.length : 0;
+            if (existing + files.length > 20) return showAlert("문서당 최대 20개까지 담을 수 있습니다.");
+            if (files.some(f => f.size > MAX_SIZE)) return showAlert("파일당 20MB 이하만 업로드 가능합니다.");
+
+            const btn = $('doc-edit-add-btn');
+            const orig = btn.innerText;
+            btn.disabled = true;
+
+            const addedFiles = [];
+            const addedPaths = [];
+            try {
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    const fileType = file.type.includes('pdf') ? 'pdf' : 'image';
+                    const filePath = `bulletins/${auth.currentUser.uid}/${Date.now()}_${Math.floor(Math.random() * 1000)}_${file.name}`;
+                    const uploadTask = uploadBytesResumable(ref(storage, filePath), file);
+                    await new Promise((resolve, reject) => {
+                        uploadTask.on('state_changed',
+                            (s) => { btn.innerText = `추가 중... ${Math.round(s.bytesTransferred / s.totalBytes * 100)}% (${i + 1}/${files.length})`; },
+                            reject,
+                            async () => {
+                                const url = await getDownloadURL(uploadTask.snapshot.ref);
+                                addedPaths.push(filePath);
+                                addedFiles.push({ url, type: fileType });
+                                resolve();
+                            }
+                        );
+                    });
+                }
+                const mergedFiles = [...(Array.isArray(d.files) ? d.files : []), ...addedFiles];
+                const mergedPaths = [...(Array.isArray(d.filePaths) ? d.filePaths : []), ...addedPaths];
+                await updateDoc(doc(db, "bulletins", d.id), { files: mergedFiles, filePaths: mergedPaths });
+                input.value = '';
+                showAlert(`${addedFiles.length}개 파일이 추가되었습니다.`);
+            } catch (e) {
+                await deleteStorageFiles(addedPaths); // 실패 시 고아 파일 롤백
+                showAlert("추가 실패: " + e.message);
+            } finally {
+                btn.innerText = orig;
+                btn.disabled = false;
+            }
         };
 
         /* ── 문서 뷰어 (PDF: PDF.js / 이미지: Panzoom) ───────────────── */
@@ -864,7 +1160,9 @@
         /* ── 모달 공통 UX: ESC / 배경 클릭으로 닫기 ─────────────────── */
         document.addEventListener('keydown', (e) => {
             if (e.key !== 'Escape') return;
-            if (!$('qr-modal').classList.contains('hidden')) closeQRModal();
+            if (!$('doc-edit-modal').classList.contains('hidden')) closeDocEdit();
+            else if (!$('qr-board-mode').classList.contains('hidden')) closeQrBoard();
+            else if (!$('qr-modal').classList.contains('hidden')) closeQRModal();
             else if (!$('doc-viewer-mode').classList.contains('translate-y-full')) closeDocViewer();
         });
         $('qr-modal').addEventListener('click', (e) => { if (e.target === $('qr-modal')) closeQRModal(); });
