@@ -346,8 +346,8 @@
         });
 
         // ── 자동 종료/로그아웃 타이머 ────────────────────────────────
-        const VIEWER_TIMEOUT_MS = 10 * 1000;   // QR 열람자: 5분
-        const ADMIN_TIMEOUT_MS = 10 * 1000;   // 관리자: 1시간
+        const VIEWER_TIMEOUT_MS = 5 * 60 * 1000;   // QR 열람자: 5분
+        const ADMIN_TIMEOUT_MS = 60 * 60 * 1000;   // 관리자: 1시간
         let viewerTimeoutId = null;
         let adminTimeoutId = null;
         const clearAutoTimers = () => {
