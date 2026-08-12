@@ -806,9 +806,16 @@
             for (let i = 0; i < totalSlots; i++) {
                 if (i < cards.length) {
                     const c = cards[i];
+                    // 긴 이름은 글씨를 줄이고 최대 2줄로 자동 조정 ('...' 잘림 방지)
+                    const len = (c.title || '').length;
+                    let fs = labelSize;
+                    if (len > 5) fs = Math.round(labelSize * 0.85);
+                    if (len > 8) fs = Math.round(labelSize * 0.70);
+                    if (len > 12) fs = Math.round(labelSize * 0.58);
+                    fs = Math.max(13, fs);
                     slotsHtml.push(`
                         <div class="bg-white border-[2px] border-[#1e56b3] rounded-[1.6rem] p-3 flex flex-col items-center shadow-sm box-border h-full overflow-hidden">
-                            <span class="font-bold text-[#003399] text-center w-full truncate tracking-tight shrink-0" style="font-family:'Malgun Gothic','Apple SD Gothic Neo',sans-serif; font-size:${labelSize}px; line-height:1.7; padding-bottom:4px;">${c.title}</span>
+                            <span class="font-bold text-[#003399] text-center w-full tracking-tight shrink-0" style="font-family:'Malgun Gothic','Apple SD Gothic Neo',sans-serif; font-size:${fs}px; line-height:1.4; padding-bottom:6px; word-break:keep-all; white-space:normal;">${c.title}</span>
                             <div class="flex-1 w-full flex items-center justify-center min-h-0 mt-1"><img src="${c.qr}" alt="${c.title}" class="max-w-full max-h-full object-contain"></div>
                         </div>
                     `);
