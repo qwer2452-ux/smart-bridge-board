@@ -1472,4 +1472,34 @@
 
             const img = document.createElement('img');
             img.src = url;
-            img.className = "max-w-full max-h-full object-con
+            img.className = "max-w-full max-h-full object-contain cursor-move";
+            imgContainer.appendChild(img);
+
+            const hint = document.createElement('div');
+            hint.className = "absolute bottom-3 left-1/2 -translate-x-1/2 bg-black/60 text-white text-[10px] px-3 py-1.5 rounded-full pointer-events-none";
+            hint.textContent = "손가락으로 확대/이동 가능";
+            imgContainer.appendChild(hint);
+
+            wrapper.appendChild(imgContainer);
+
+            img.onload = () => {
+                const pz = panzoom(img, { maxZoom: 5, minZoom: 1, bounds: true, boundsPadding: 0.2 });
+                state.panzooms.push(pz);
+            };
+        }
+
+        const closeDocViewer = () => {
+            $('doc-viewer-mode').classList.add('translate-y-full');
+            disposePanzooms();
+        };
+        $('doc-viewer-close').addEventListener('click', closeDocViewer);
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key !== 'Escape') return;
+            if (!$('doc-edit-modal').classList.contains('hidden')) closeDocEdit();
+            else if (!$('qr-board-mode').classList.contains('hidden')) closeQrBoard();
+            else if (!$('doc-viewer-mode').classList.contains('translate-y-full')) closeDocViewer();
+        });
+    </script>
+</body>
+</html>
