@@ -5,6 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Smart Bridge Board</title>
 
+    <!-- PWA (홈 화면 웹앱: 아이콘 + 스플래시) -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#1e3a8a">
+    <link rel="icon" href="/icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/icon.svg">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Smart Bridge Board">
+
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -1500,6 +1509,15 @@
             else if (!$('qr-board-mode').classList.contains('hidden')) closeQrBoard();
             else if (!$('doc-viewer-mode').classList.contains('translate-y-full')) closeDocViewer();
         });
+    </script>
+
+    <!-- 서비스워커 등록 (PWA 설치 조건 충족) -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').catch(() => {});
+            });
+        }
     </script>
 </body>
 </html>
