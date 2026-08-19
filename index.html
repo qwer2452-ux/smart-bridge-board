@@ -806,7 +806,7 @@
             [['법정장비', '증서목록', '증서'], '선박에 비치된 법정장비와 각종 증서의 목록입니다.'],
             [['유효기간', '만료일'], '승무원의 해기사 면허와 교육 이수의 유효기간을 확인할 수 있는 자료입니다.'],
             [['면허', '교육'], '승무원의 해기사 면허 및 교육 이수 현황을 확인할 수 있는 자료입니다.'],
-            [['항로도', '항로'], '선박의 운항 항로를 표시한 도면입니다.'],
+            [['항로도', '항로'], '선박의 운항 항로를 표시한 이미지입니다.'],
             [['회사방침', '방침'], '선사의 안전경영 방침을 안내하는 자료입니다.'],
             [['당직배치', '당직'], '당직 근무자의 배치 현황을 나타낸 배치도입니다.'],
             [['선원명부', '명부'], '승선 중인 선원의 인적사항을 정리한 명부입니다.'],
@@ -828,7 +828,7 @@
             }
             // 이름 끝 글자로 문서 성격 추정
             if (/표$/.test(t)) return `${t}의 내용을 정리한 표입니다.`;
-            if (/도$/.test(t)) return `${t}의 내용을 나타낸 도면입니다.`;
+            if (/도$/.test(t)) return `${t}의 내용을 나타낸 이미지입니다.`;
             if (/(서|증)$/.test(t)) return `${t}의 내용을 확인할 수 있는 문서입니다.`;
             if (/(목록|현황)$/.test(t)) return `${t}을 정리한 자료입니다.`;
             return `${t} 관련 자료입니다.`;
@@ -875,7 +875,8 @@
             const n = rowsData.length;
             const areaH = wrap.clientHeight || 920;
             const headH = 54;
-            const rowH = Math.floor((areaH - headH) / n);
+            const noteH = 64;                                  // 맨 아래 유의사항 행(2줄 기준 고정 높이)
+            const rowH = Math.floor((areaH - headH - noteH) / n);
             const qrSize = Math.max(56, Math.min(150, rowH - 14));
             const titleFs = Math.max(14, Math.min(24, Math.round(rowH * 0.24)));
             const descFs = Math.max(12, Math.min(19, Math.round(rowH * 0.19)));
@@ -903,12 +904,16 @@
                     <colgroup><col style="width:26%"><col style="width:46%"><col style="width:28%"></colgroup>
                     <thead>
                         <tr style="height:${headH}px;">
-                            <th style="${cellBase} background:#e8eefb; color:${NAVY}; font-size:21px; font-weight:900;">게시물 종류</th>
-                            <th style="${cellBase} background:#e8eefb; color:${NAVY}; font-size:21px; font-weight:900;">설명</th>
-                            <th style="${cellBase} background:#e8eefb; color:${NAVY}; font-size:21px; font-weight:900;">QR코드</th>
+                            <th style="${cellBase} background:${NAVY}; color:#ffffff; font-size:21px; font-weight:900;">게시물 종류</th>
+                            <th style="${cellBase} background:${NAVY}; color:#ffffff; font-size:21px; font-weight:900;">설명</th>
+                            <th style="${cellBase} background:${NAVY}; color:#ffffff; font-size:21px; font-weight:900;">QR코드</th>
                         </tr>
                     </thead>
-                    <tbody>${bodyHtml}</tbody>
+                    <tbody>${bodyHtml}
+                        <tr style="height:${noteH}px;">
+                            <td colspan="3" style="${cellBase} background:#fff8e1; color:#8a5a00; text-align:center; font-weight:800; font-size:16px; line-height:1.4; word-break:keep-all; white-space:normal;">※ 유의사항 : 비상 시 즉시 확인해야 하는 게시물과 원본 비치가 필요한 서류는 QR코드로 대체할 수 없으므로 반드시 원본을 함께 비치하시기 바랍니다.</td>
+                        </tr>
+                    </tbody>
                 </table>
             `;
             initBoardPan(); // 팬/줌 활성화 + 화면에 맞춤
