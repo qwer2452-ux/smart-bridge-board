@@ -145,21 +145,6 @@
 
                     <div class="border-t border-slate-100 pt-3 mt-1 flex flex-col gap-2">
                         <span class="text-[11px] font-bold text-slate-400">배포 및 접근 관리</span>
-                        <div class="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
-                            <span class="text-[11px] font-bold text-slate-500 shrink-0">QR 배열</span>
-                            <select id="board-cols" class="flex-1 bg-white border border-slate-200 rounded-md px-2 py-1 text-xs font-bold text-slate-700 outline-none">
-                                <option value="2">가로 2칸</option>
-                                <option value="3">가로 3칸</option>
-                                <option value="4">가로 4칸</option>
-                                <option value="5">가로 5칸</option>
-                                <option value="6" selected>가로 6칸</option>
-                            </select>
-                            <span class="text-slate-400 font-bold text-xs">×</span>
-                            <select id="board-rows" class="flex-1 bg-white border border-slate-200 rounded-md px-2 py-1 text-xs font-bold text-slate-700 outline-none">
-                                <option value="1">세로 1줄</option>
-                                <option value="2" selected>세로 2줄</option>
-                            </select>
-                        </div>
                         <button data-action="preview-board" class="w-full bg-slate-800 text-white font-bold py-2.5 rounded-lg text-xs transition-colors shadow flex items-center justify-center gap-1 mt-1"><span class="text-sm">👀</span> 종합 QR 게시판 미리보기</button>
                     </div>
                 </section>
@@ -168,6 +153,7 @@
                     <h2 class="text-sm font-extrabold text-slate-800 mb-4 border-b border-slate-100 pb-2">📤 새 문서 등록</h2>
                     <form id="upload-form" class="flex flex-col gap-3">
                         <input type="text" id="doc-title" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm font-medium" placeholder="문서 제목 (예: 추가 매뉴얼)">
+                        <textarea id="doc-desc" rows="2" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm font-medium resize-none" placeholder="문서 설명 (비워두면 자동으로 작성됩니다)"></textarea>
                         <input type="file" id="file-upload" class="w-full text-sm text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 cursor-pointer" accept=".pdf, image/*" multiple required>
                         <p class="text-[10px] text-slate-400 font-medium px-1">최대 10개, 파일당 20MB 제한</p>
                         <button type="submit" id="upload-btn" class="w-full bg-slate-800 text-white font-bold py-3.5 rounded-xl hover:bg-slate-900 shadow-md mt-1">등록하기</button>
@@ -251,37 +237,37 @@
             <!-- 팬/줌 뷰포트 (두 손가락으로 확대·축소·이동) -->
             <div class="board-scroll-container absolute top-[52px] left-0 right-0 bottom-0 overflow-hidden touch-none">
 
-                <!-- 고정 사이즈 포스터 영역 (A4 가로 비율: 1190 x 842) -->
-                <div id="capture-board" class="w-[1190px] h-[842px] absolute left-0 top-0 bg-white border-[4px] border-[#1e56b3] rounded-[2.5rem] flex flex-col p-10 overflow-hidden box-border shadow-2xl">
+                <!-- 고정 사이즈 포스터 영역 (A4 세로 비율: 842 x 1190) -->
+                <div id="capture-board" class="w-[842px] h-[1190px] absolute left-0 top-0 bg-white border-[4px] border-[#1e56b3] rounded-[2.5rem] flex flex-col p-8 overflow-hidden box-border shadow-2xl">
 
                     <!-- 헤더: 로고 · 타이틀 · 마스코트 (src는 JS에서 토큰 포함 주소로 주입) -->
-                    <div class="flex items-center justify-between z-10 relative px-4">
-                        <img id="board-logo" alt="" class="w-[150px] h-[150px] object-contain shrink-0" crossorigin="anonymous">
+                    <div class="flex items-center justify-between z-10 relative px-1 shrink-0">
+                        <img id="board-logo" alt="" class="w-[95px] h-[95px] object-contain shrink-0" crossorigin="anonymous">
 
-                        <h1 class="text-[75px] font-black text-[#003399] tracking-tight text-center" style="font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; line-height: 1.35; padding-top: 6px; padding-bottom: 24px;">조타실 QR 자료 게시판</h1>
+                        <h1 class="text-[42px] font-black text-[#003399] tracking-tight text-center whitespace-nowrap" style="font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; line-height: 1.35; padding-top: 4px; padding-bottom: 12px;">조타실 QR 자료 게시판</h1>
 
-                        <img id="board-mascot-top" alt="" class="w-[150px] h-[150px] object-contain shrink-0" crossorigin="anonymous">
+                        <img id="board-mascot-top" alt="" class="w-[95px] h-[95px] object-contain shrink-0" crossorigin="anonymous">
                     </div>
 
-                    <!-- 중앙: QR 12칸 그리드 (6열 2행 고정) -->
-                    <div id="qr-board-grid" class="grid gap-4 flex-1 min-h-0 my-4 z-10 relative">
+                    <!-- 중앙: 게시물 표 (게시물 종류 | 설명 | QR코드) -->
+                    <div id="qr-board-table" class="flex-1 min-h-0 mt-1 mb-3 z-10 relative">
                         <!-- JS에서 주입 -->
                     </div>
 
                     <!-- 푸터: 스마트폰 안내문 -->
-                    <div class="flex items-center justify-center gap-6 z-10 relative mb-4">
+                    <div class="flex items-center justify-center gap-4 z-10 relative mb-2 shrink-0">
                         <!-- 예쁜 스마트폰 아이콘 (SVG) -->
-                        <svg width="64" height="104" viewBox="0 0 64 104" fill="none" xmlns="http://www.w3.org/2000/svg" class="shrink-0 drop-shadow-sm">
+                        <svg width="42" height="68" viewBox="0 0 64 104" fill="none" xmlns="http://www.w3.org/2000/svg" class="shrink-0 drop-shadow-sm">
                             <rect x="2" y="2" width="60" height="100" rx="16" fill="#003399"/>
                             <rect x="8" y="13" width="48" height="78" rx="5" fill="#ffffff"/>
                             <rect x="25" y="7" width="14" height="3" rx="1.5" fill="#ffffff"/>
                             <rect x="26" y="95" width="12" height="4" rx="2" fill="#ffffff"/>
                         </svg>
-                        <span class="text-[55px] font-black text-[#003399]" style="font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; line-height: 1.4; padding-top: 4px; padding-bottom: 18px;">휴대폰으로 스캔하여 열람</span>
+                        <span class="text-[36px] font-black text-[#003399]" style="font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; line-height: 1.4; padding-top: 3px; padding-bottom: 12px;">휴대폰으로 스캔하여 열람</span>
                     </div>
 
-                    <!-- 우측 하단 선박 마스코트 (크기 축소 + z-index를 QR보다 뒤로 → QR 절대 안 가림) -->
-                    <img id="board-mascot-ship" alt="" class="absolute bottom-[4px] right-[6px] w-[125px] h-[125px] object-contain z-[5]" crossorigin="anonymous">
+                    <!-- 우측 하단 선박 마스코트 (z-index를 표보다 뒤로 → QR 절대 안 가림) -->
+                    <img id="board-mascot-ship" alt="" class="absolute bottom-[4px] right-[6px] w-[100px] h-[100px] object-contain z-[5]" crossorigin="anonymous">
 
                     <!-- 하단 물결 무늬 (html2canvas 호환 위해 img data-URI 사용) -->
                     <img id="board-wave" class="absolute bottom-0 left-0 w-full h-[80px] z-0 rounded-b-[2.1rem]" alt="" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 80' preserveAspectRatio='none'><path d='M0,40 C150,10 300,70 450,40 C600,10 750,70 900,40 C1050,10 1200,60 1200,45 L1200,80 L0,80 Z' fill='%23bfdbfe'/><path d='M0,50 C150,25 300,75 450,50 C600,25 750,75 900,50 C1050,25 1200,65 1200,55 L1200,80 L0,80 Z' fill='%233b82f6' opacity='0.6'/></svg>">
@@ -530,7 +516,6 @@
         const goToAdminDashboard = (shipId) => {
             hide('admin-home-mode'); show('admin-mode');
             updateShipSelectOptions(shipId);
-            loadBoardLayoutForShip();
             renderShipImagePreview();
             renderDocuments();
         };
@@ -556,28 +541,7 @@
             });
             if (!found && selectEl.options.length > 0) selectEl.options[0].selected = true;
         };
-        // ── 종합 QR 게시판 배열(가로×세로) — 선박별 저장 ──────────────
-        const loadBoardLayoutForShip = () => {
-            const colsEl = $('board-cols'), rowsEl = $('board-rows');
-            if (!colsEl || !rowsEl) return;
-            const ship = state.ships.find(s => s.id === $('admin-ship-select').value);
-            colsEl.value = String(ship?.boardCols || 6);
-            rowsEl.value = String(ship?.boardRows || 2);
-        };
-        const saveBoardLayout = async () => {
-            const shipId = $('admin-ship-select').value;
-            if (!shipId) return;
-            try {
-                await updateDoc(doc(db, "ships", shipId), {
-                    boardCols: parseInt($('board-cols').value, 10),
-                    boardRows: parseInt($('board-rows').value, 10)
-                });
-            } catch (_) {}
-        };
-        $('board-cols').addEventListener('change', saveBoardLayout);
-        $('board-rows').addEventListener('change', saveBoardLayout);
-
-        $('admin-ship-select').addEventListener('change', () => { loadBoardLayoutForShip(); renderShipImagePreview(); renderDocuments(); });
+        $('admin-ship-select').addEventListener('change', () => { renderShipImagePreview(); renderDocuments(); });
 
         const addNewShip = () => {
             showPrompt("추가할 선박 이름을 입력하세요", "", false, async (shipName) => {
@@ -589,7 +553,7 @@
                             createdAt: serverTimestamp()
                         });
 
-                        const defaultDocs = ["임명장", "회사방침", "당직배치도", "선원명부", "선박제원", "비상조직표", "항로도", "비품현황"];
+                        const defaultDocs = ["임명장", "회사방침", "당직배치도", "선박제원", "항로도", "비품현황", "승무원 근무표", "승무원 면허 및 교육 유효기간"];
                         const baseTime = Date.now();
 
                         const batchPromises = defaultDocs.map((title, idx) => {
@@ -734,16 +698,30 @@
             }));
         };
 
-        const getDocShareUrl = (shipId, docId) => window.location.origin + window.location.pathname + `?ship=${shipId}&doc=${docId}`;
+        /* QR에 넣을 문서 주소.
+         * 배포된 사이트(http/https)에서는 지금 주소를 그대로 사용한다.
+         * 로컬 파일(file:)이나 미리보기(data:)로 열면 location.pathname 이 HTML 소스 전체가 되어
+         * QR에 담을 수 없을 만큼 길어지므로, 그때만 실제 배포 주소를 사용한다. (배포 환경에는 영향 없음)
+         */
+        const APP_BASE_URL = 'https://smart-bridge-board.vercel.app/';
+        const shareBase = () => /^https?:$/.test(window.location.protocol)
+            ? window.location.origin + window.location.pathname
+            : APP_BASE_URL;
+        // 개별 문서 바로 열기
+        const getDocShareUrl = (shipId, docId) => shareBase() + `?ship=${shipId}&doc=${docId}`;
+        // 선박의 전체 자료 목록(폴더식 열람 화면) 열기 — doc 파라미터 없음
+        const getShipShareUrl = (shipId) => shareBase() + `?ship=${shipId}`;
 
-        const generateQrDataUrl = (text) => new Promise((resolve) => {
+        const generateQrDataUrl = (text) => new Promise((resolve, reject) => {
             const tmp = document.createElement('div');
             tmp.style.position = 'fixed'; tmp.style.left = '-9999px';
             document.body.appendChild(tmp);
             new QRCode(tmp, { text, width: 300, height: 300, colorDark: "#000000", colorLight: "#ffffff", correctLevel: QRCode.CorrectLevel.H });
+            const deadline = Date.now() + 8000; // 무한 대기 방지
             const pick = () => {
                 const url = tmp.querySelector('img')?.src || tmp.querySelector('canvas')?.toDataURL('image/png');
                 if (url && url.startsWith('data:image')) { tmp.remove(); resolve(url); }
+                else if (Date.now() > deadline) { tmp.remove(); reject(new Error('QR 생성 시간 초과')); }
                 else setTimeout(pick, 30);
             };
             pick();
@@ -788,7 +766,8 @@
             const container = document.querySelector('.board-scroll-container');
             if (!boardPz || !container) return;
             const cw = container.clientWidth, ch = container.clientHeight;
-            const bw = 1190, bh = 842;
+            const boardEl = $('capture-board');                        // A4 세로(842×1190) — 실제 크기를 읽어 사용
+            const bw = boardEl.offsetWidth || 842, bh = boardEl.offsetHeight || 1190;
             const scale = Math.min(cw / bw, ch / bh) * 0.96;
             boardPz.zoomAbs(0, 0, scale);
             boardPz.moveTo((cw - bw * scale) / 2, (ch - bh * scale) / 2);
@@ -810,6 +789,51 @@
             if (boardPz && !$('qr-board-mode').classList.contains('hidden')) fitBoard();
         });
 
+        // HTML 특수문자 이스케이프 (표에 문서명/설명을 안전하게 주입)
+        const esc = (s = '') => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+        /* ── 문서 설명 자동 생성 ────────────────────────────────────────
+         * 사용자가 설명을 비워두면 문서 이름에 맞는 설명을 자동으로 작성한다.
+         * 1) 내장 사전(표준 게시물) → 2) 키워드 규칙 → 3) 기본 문구
+         * ※ 위에서부터 먼저 일치하는 항목이 쓰이므로 구체적인 항목을 앞에 둔다.
+         */
+        const DESC_DICT = [
+            [['임명장', '임명'], '선장 및 주요 직책자의 임명 사항을 확인할 수 있는 임명장입니다.'],
+            [['안전관리목표', '목표및방침'], '선사의 안전관리 목표와 경영 방침을 안내하는 자료입니다.'],
+            [['복무지침', '선장복무'], '선장이 준수해야 할 복무 기준과 직무 수행 지침입니다.'],
+            [['근무편성', '편성표', '근무표'], '승무원의 월간 근무 일정과 당직 편성을 정리한 표입니다.'],
+            [['운항관리자', '휴무'], '운항관리자의 휴무 일정을 안내하는 자료입니다.'],
+            [['법정장비', '증서목록', '증서'], '선박에 비치된 법정장비와 각종 증서의 목록입니다.'],
+            [['유효기간', '만료일'], '승무원의 해기사 면허와 교육 이수의 유효기간을 확인할 수 있는 자료입니다.'],
+            [['면허', '교육'], '승무원의 해기사 면허 및 교육 이수 현황을 확인할 수 있는 자료입니다.'],
+            [['항로도', '항로'], '선박의 운항 항로를 표시한 도면입니다.'],
+            [['회사방침', '방침'], '선사의 안전경영 방침을 안내하는 자료입니다.'],
+            [['당직배치', '당직'], '당직 근무자의 배치 현황을 나타낸 배치도입니다.'],
+            [['선원명부', '명부'], '승선 중인 선원의 인적사항을 정리한 명부입니다.'],
+            [['선박제원', '제원'], '선박의 주요 제원과 성능 정보를 정리한 자료입니다.'],
+            [['비상조직', '조직표'], '비상 상황 시 임무와 조직 체계를 나타낸 조직표입니다.'],
+            [['비품'], '선내 비치 비품의 보유 현황을 정리한 자료입니다.'],
+            [['비상', '대응', '절차'], '비상 상황 발생 시 대응 절차를 안내하는 자료입니다.'],
+            [['점검'], '점검 항목과 점검 결과를 확인할 수 있는 자료입니다.'],
+            [['매뉴얼', '지침'], '업무 수행에 필요한 기준과 절차를 정리한 자료입니다.']
+        ];
+
+        const autoDescribe = (title = '') => {
+            const t = String(title || '').trim();
+            if (!t) return '관련 자료입니다.';
+            const key = t.replace(/\s+/g, '');
+
+            for (const [keys, desc] of DESC_DICT) {
+                if (keys.some(k => key.includes(k))) return desc;
+            }
+            // 이름 끝 글자로 문서 성격 추정
+            if (/표$/.test(t)) return `${t}의 내용을 정리한 표입니다.`;
+            if (/도$/.test(t)) return `${t}의 내용을 나타낸 도면입니다.`;
+            if (/(서|증)$/.test(t)) return `${t}의 내용을 확인할 수 있는 문서입니다.`;
+            if (/(목록|현황)$/.test(t)) return `${t}을 정리한 자료입니다.`;
+            return `${t} 관련 자료입니다.`;
+        };
+
         // 🌟 종합 QR 게시판 열기 (미리보기)
         const openQrBoard = async () => {
             const shipId = $('admin-ship-select').value;
@@ -817,55 +841,76 @@
             if (!shipObj) return showAlert("선박을 먼저 선택해주세요.");
 
             const docs = state.documents.filter(d => d.shipId === shipId);
-            const grid = $('qr-board-grid');
-
-            // 선택한 배열(가로 cols × 세로 rows). 문서가 많으면 세로줄을 자동으로 늘려 모두 표시
-            const cols = parseInt($('board-cols').value, 10) || 6;
-            const selRows = parseInt($('board-rows').value, 10) || 2;
-            const rows = Math.max(selRows, Math.ceil((docs.length || 1) / cols));
-            const totalSlots = cols * rows;
-            const labelSize = Math.min(46, Math.max(18, Math.round(140 / cols)));
-            const labelBoxH = Math.round(labelSize * 2.2); // 라벨 영역 고정 높이 → 모든 QR 동일 (값↓ = 글씨 위로·QR 크게)
-
-            grid.style.gridTemplateColumns = `repeat(${cols}, minmax(0, 1fr))`;
-            grid.style.gridTemplateRows = `repeat(${rows}, minmax(0, 1fr))`;
+            const wrap = $('qr-board-table');
 
             $('qr-board-mode').classList.remove('hidden');
             loadBrandingImages(); // 로고/마스코트 주입 (비동기)
-            grid.innerHTML = `<div style="grid-column:1/-1" class="text-center py-20 text-[#003399] font-bold text-3xl">QR 생성 중... 잠시만 기다려주세요.</div>`;
+            wrap.innerHTML = `<div class="text-center py-20 text-[#003399] font-bold text-3xl">QR 생성 중... 잠시만 기다려주세요.</div>`;
+            initBoardPan(); // 로딩 중에도 게시판이 화면에 맞게 보이도록 먼저 맞춤
 
-            const cards = await Promise.all(docs.map(async (d) => ({
-                title: d.title, qr: await generateQrDataUrl(getDocShareUrl(shipId, d.id))
-            })));
-
-            const slotsHtml = [];
-            for (let i = 0; i < totalSlots; i++) {
-                if (i < cards.length) {
-                    const c = cards[i];
-                    // 긴 이름은 글씨를 줄이고 최대 2줄로 자동 조정 ('...' 잘림 방지)
-                    const len = (c.title || '').length;
-                    let fs = labelSize;
-                    if (len > 5) fs = Math.round(labelSize * 0.85);
-                    if (len > 8) fs = Math.round(labelSize * 0.70);
-                    if (len > 12) fs = Math.round(labelSize * 0.58);
-                    fs = Math.max(13, fs);
-                    slotsHtml.push(`
-                        <div class="bg-white border-[2px] border-[#1e56b3] rounded-[1.6rem] p-3 flex flex-col items-center shadow-sm box-border h-full overflow-hidden">
-                            <div class="w-full flex items-start justify-center shrink-0" style="height:${labelBoxH}px;">
-                                <span class="font-bold text-[#003399] text-center w-full tracking-tight" style="font-family:'Malgun Gothic','Apple SD Gothic Neo',sans-serif; font-size:${fs}px; line-height:1.3; word-break:keep-all; white-space:normal;">${c.title}</span>
-                            </div>
-                            <div class="flex-1 w-full flex items-center justify-center min-h-0"><img src="${c.qr}" alt="${c.title}" class="max-w-full max-h-full object-contain"></div>
-                        </div>
-                    `);
-                } else {
-                    slotsHtml.push(`
-                        <div class="bg-slate-50 border-[2px] border-dashed border-[#1e56b3]/30 rounded-[1.6rem] flex items-center justify-center box-border h-full">
-                            <span class="font-bold text-[#1e56b3]/40 text-center" style="font-family:'Malgun Gothic',sans-serif; font-size:${Math.max(14, labelSize - 6)}px;">빈 슬롯</span>
-                        </div>
-                    `);
-                }
+            let rowsData;
+            try {
+                // 맨 윗줄 고정 행: QR 하나로 전체 자료 목록(폴더식 화면)을 여는 링크
+                const allRow = {
+                    title: '전체 자료 보기',
+                    desc: '이 QR 하나로 아래 모든 자료를 한 번에 열람할 수 있습니다.',
+                    qr: await generateQrDataUrl(getShipShareUrl(shipId)),
+                    isAll: true
+                };
+                const docRows = await Promise.all(docs.map(async (d) => ({
+                    title: d.title || '',
+                    desc: (d.description && d.description.trim()) ? d.description.trim() : autoDescribe(d.title),
+                    qr: await generateQrDataUrl(getDocShareUrl(shipId, d.id)),
+                    isAll: false
+                })));
+                rowsData = [allRow, ...docRows];
+            } catch (e) {
+                console.error('QR 생성 실패:', e);
+                wrap.innerHTML = `<div class="text-center py-20 text-red-600 font-bold text-2xl">QR 생성에 실패했습니다.<br>인터넷 연결을 확인한 뒤 다시 시도해주세요.</div>`;
+                initBoardPan();
+                return;
             }
-            grid.innerHTML = slotsHtml.join('');
+
+            // 표 영역 높이에 맞춰 행 높이·QR 크기·글씨 크기를 자동 배분
+            const n = rowsData.length;
+            const areaH = wrap.clientHeight || 920;
+            const headH = 54;
+            const rowH = Math.floor((areaH - headH) / n);
+            const qrSize = Math.max(56, Math.min(150, rowH - 14));
+            const titleFs = Math.max(14, Math.min(24, Math.round(rowH * 0.24)));
+            const descFs = Math.max(12, Math.min(19, Math.round(rowH * 0.19)));
+
+            const NAVY = '#003399', LINE = '#1e56b3';
+            const FONT = "'Malgun Gothic','Apple SD Gothic Neo',sans-serif";
+            // word-break:keep-all + white-space:normal → html2canvas에서도 글씨 잘림 없음
+            const cellBase = `border:2px solid ${LINE}; font-family:${FONT}; padding:6px 10px; vertical-align:middle;`;
+
+            const bodyHtml = rowsData.map((r) => {
+                const bg = r.isAll ? ' background:#eef4ff;' : ''; // 고정 행만 연한 파란 배경으로 강조
+                return `
+                <tr style="height:${rowH}px;">
+                    <td style="${cellBase}${bg} text-align:center; font-weight:800; color:${NAVY}; font-size:${titleFs}px; line-height:1.35; word-break:keep-all; white-space:normal;">${esc(r.title)}</td>
+                    <td style="${cellBase}${bg} text-align:left; font-weight:600; color:#334155; font-size:${descFs}px; line-height:1.45; word-break:keep-all; white-space:normal;">${esc(r.desc)}</td>
+                    <td style="${cellBase}${bg} text-align:center; padding:5px;">
+                        <img src="${r.qr}" alt="${esc(r.title)}" style="width:${qrSize}px; height:${qrSize}px; display:block; margin:0 auto; object-fit:contain;">
+                    </td>
+                </tr>
+            `;
+            }).join('');
+
+            wrap.innerHTML = `
+                <table style="width:100%; border-collapse:collapse; table-layout:fixed; background:#fff;">
+                    <colgroup><col style="width:26%"><col style="width:46%"><col style="width:28%"></colgroup>
+                    <thead>
+                        <tr style="height:${headH}px;">
+                            <th style="${cellBase} background:#e8eefb; color:${NAVY}; font-size:21px; font-weight:900;">게시물 종류</th>
+                            <th style="${cellBase} background:#e8eefb; color:${NAVY}; font-size:21px; font-weight:900;">설명</th>
+                            <th style="${cellBase} background:#e8eefb; color:${NAVY}; font-size:21px; font-weight:900;">QR코드</th>
+                        </tr>
+                    </thead>
+                    <tbody>${bodyHtml}</tbody>
+                </table>
+            `;
             initBoardPan(); // 팬/줌 활성화 + 화면에 맞춤
         };
 
@@ -931,13 +976,13 @@
             }
         });
 
-        // 📄 PDF 저장 (A4 가로)
+        // 📄 PDF 저장 (A4 세로)
         const downloadBoardPdf = () => withBusyBtn('[data-action="download-pdf"]', "⏳ PDF 생성 중...", async () => {
             try {
                 const canvas = await captureBoard();
                 const imgData = canvas.toDataURL('image/jpeg', 0.95);
                 const { jsPDF } = window.jspdf;
-                const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+                const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
                 const pw = pdf.internal.pageSize.getWidth();
                 const ph = pdf.internal.pageSize.getHeight();
                 pdf.addImage(imgData, 'JPEG', 0, 0, pw, ph);
@@ -1140,6 +1185,7 @@
                 return showAlert(`문서는 선박당 최대 ${MAX_DOCS}개까지 등록할 수 있습니다.\n기존 문서를 삭제한 뒤 다시 등록해주세요.`);
             }
 
+            const newTitle = $('doc-title').value.trim();
             const fileInput = $('file-upload');
             const files = Array.from(fileInput.files);
 
@@ -1177,7 +1223,8 @@
                 }
 
                 await addDoc(collection(db, "bulletins"), {
-                    title: $('doc-title').value.trim(),
+                    title: newTitle,
+                    description: $('doc-desc').value.trim() || autoDescribe(newTitle), // 비워두면 자동 작성
                     files: fileDataArray,
                     filePaths: uploadedPaths,
                     shipId: targetShipId,
@@ -1186,6 +1233,7 @@
                 });
 
                 $('doc-title').value = '';
+                $('doc-desc').value = '';
                 fileInput.value = '';
                 showAlert("새로운 문서가 성공적으로 등록되었습니다!");
             } catch (error) {
