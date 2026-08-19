@@ -238,21 +238,24 @@
             <div class="board-scroll-container absolute top-[52px] left-0 right-0 bottom-0 overflow-hidden touch-none">
 
                 <!-- 고정 사이즈 포스터 영역 (A4 세로 비율: 842 x 1190) -->
-                <div id="capture-board" class="w-[842px] h-[1190px] absolute left-0 top-0 bg-white border-[4px] border-[#1e56b3] rounded-[2.5rem] flex flex-col p-8 overflow-hidden box-border shadow-2xl">
+                <div id="capture-board" class="w-[842px] h-[1190px] absolute left-0 top-0 bg-white border-[4px] border-[#1e56b3] rounded-[2.5rem] flex flex-col overflow-hidden box-border shadow-2xl">
 
-                    <!-- 헤더: 로고 · 타이틀 · 마스코트 (src는 JS에서 토큰 포함 주소로 주입) -->
-                    <div class="flex items-center justify-between z-10 relative px-1 shrink-0">
-                        <img id="board-logo" alt="" class="w-[95px] h-[95px] object-contain shrink-0" crossorigin="anonymous">
+                    <!-- 헤더: 남색 띠 (로고 · 타이틀 · 마스코트) — src는 JS에서 토큰 포함 주소로 주입 -->
+                    <div class="flex items-center justify-between z-10 relative shrink-0 bg-[#14284f] px-7 py-3">
+                        <img id="board-logo" alt="" class="w-[80px] h-[80px] object-contain shrink-0 bg-white rounded-full p-1" crossorigin="anonymous">
 
-                        <h1 class="text-[42px] font-black text-[#003399] tracking-tight text-center whitespace-nowrap" style="font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; line-height: 1.35; padding-top: 4px; padding-bottom: 12px;">조타실 QR 자료 게시판</h1>
+                        <h1 class="text-[40px] font-black text-white tracking-tight text-center whitespace-nowrap" style="font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; line-height: 1.3; padding-top: 2px; padding-bottom: 8px;">조타실 QR 자료 게시판</h1>
 
-                        <img id="board-mascot-top" alt="" class="w-[95px] h-[95px] object-contain shrink-0" crossorigin="anonymous">
+                        <img id="board-mascot-top" alt="" class="w-[80px] h-[80px] object-contain shrink-0" crossorigin="anonymous">
                     </div>
 
-                    <!-- 중앙: 게시물 표 (게시물 종류 | 설명 | QR코드) -->
-                    <div id="qr-board-table" class="flex-1 min-h-0 mt-1 mb-3 z-10 relative">
+                    <!-- 중앙: 게시물 카드 2열 -->
+                    <div id="qr-board-cards" class="flex-1 min-h-0 mt-4 mb-2 mx-7 z-10 relative">
                         <!-- JS에서 주입 -->
                     </div>
+
+                    <!-- 유의사항 -->
+                    <div id="board-note" class="mx-7 mb-2 z-10 relative shrink-0 bg-[#fdf3dc] border-2 border-[#d9b978] rounded-lg px-4 py-2 text-center" style="font-family:'Malgun Gothic','Apple SD Gothic Neo',sans-serif; font-size:16px; font-weight:800; color:#7a5200; line-height:1.45; word-break:keep-all;">※ 유의사항 : 비상 시 즉시 확인해야 하는 게시물과 원본 비치가 필요한 서류는 QR코드로 대체할 수 없으므로 반드시 원본을 함께 비치하시기 바랍니다.</div>
 
                     <!-- 푸터: 스마트폰 안내문 -->
                     <div class="flex items-center justify-center gap-4 z-10 relative mb-2 shrink-0">
@@ -716,7 +719,8 @@
             const tmp = document.createElement('div');
             tmp.style.position = 'fixed'; tmp.style.left = '-9999px';
             document.body.appendChild(tmp);
-            new QRCode(tmp, { text, width: 300, height: 300, colorDark: "#000000", colorLight: "#ffffff", correctLevel: QRCode.CorrectLevel.H });
+            // correctLevel M: 오류복원 15% — H(30%)보다 사각점이 굵어져 인쇄물 스캔 인식률이 크게 좋아짐
+            new QRCode(tmp, { text, width: 300, height: 300, colorDark: "#000000", colorLight: "#ffffff", correctLevel: QRCode.CorrectLevel.M });
             const deadline = Date.now() + 8000; // 무한 대기 방지
             const pick = () => {
                 const url = tmp.querySelector('img')?.src || tmp.querySelector('canvas')?.toDataURL('image/png');
@@ -797,41 +801,42 @@
          * 1) 내장 사전(표준 게시물) → 2) 키워드 규칙 → 3) 기본 문구
          * ※ 위에서부터 먼저 일치하는 항목이 쓰이므로 구체적인 항목을 앞에 둔다.
          */
+        /* 카드 한 줄에 들어가도록 짧은 명사형으로 작성 (글씨를 크게 유지하기 위함) */
         const DESC_DICT = [
-            [['임명장', '임명'], '선장 및 주요 직책자의 임명 사항을 확인할 수 있는 임명장입니다.'],
-            [['안전관리목표', '목표및방침'], '선사의 안전관리 목표와 경영 방침을 안내하는 자료입니다.'],
-            [['복무지침', '선장복무'], '선장이 준수해야 할 복무 기준과 직무 수행 지침입니다.'],
-            [['근무편성', '편성표', '근무표'], '승무원의 월간 근무 일정과 당직 편성을 정리한 표입니다.'],
-            [['운항관리자', '휴무'], '운항관리자의 휴무 일정을 안내하는 자료입니다.'],
-            [['법정장비', '증서목록', '증서'], '선박에 비치된 법정장비와 각종 증서의 목록입니다.'],
-            [['유효기간', '만료일'], '승무원의 해기사 면허와 교육 이수의 유효기간을 확인할 수 있는 자료입니다.'],
-            [['면허', '교육'], '승무원의 해기사 면허 및 교육 이수 현황을 확인할 수 있는 자료입니다.'],
-            [['항로도', '항로'], '선박의 운항 항로를 표시한 이미지입니다.'],
-            [['회사방침', '방침'], '선사의 안전경영 방침을 안내하는 자료입니다.'],
-            [['당직배치', '당직'], '당직 근무자의 배치 현황을 나타낸 배치도입니다.'],
-            [['선원명부', '명부'], '승선 중인 선원의 인적사항을 정리한 명부입니다.'],
-            [['선박제원', '제원'], '선박의 주요 제원과 성능 정보를 정리한 자료입니다.'],
-            [['비상조직', '조직표'], '비상 상황 시 임무와 조직 체계를 나타낸 조직표입니다.'],
-            [['비품'], '선내 비치 비품의 보유 현황을 정리한 자료입니다.'],
-            [['비상', '대응', '절차'], '비상 상황 발생 시 대응 절차를 안내하는 자료입니다.'],
-            [['점검'], '점검 항목과 점검 결과를 확인할 수 있는 자료입니다.'],
-            [['매뉴얼', '지침'], '업무 수행에 필요한 기준과 절차를 정리한 자료입니다.']
+            [['임명장', '임명'], '선장 및 주요 직책자의 임명 사항 확인'],
+            [['안전관리목표', '목표및방침'], '선사의 안전관리 목표·경영 방침'],
+            [['복무지침', '선장복무'], '선장의 복무 기준·직무 수행 지침'],
+            [['근무편성', '편성표', '근무표'], '승무원의 월간 근무·당직 편성'],
+            [['운항관리자', '휴무'], '운항관리자 휴무 일정 안내'],
+            [['법정장비', '증서목록', '증서'], '선박 비치 법정장비·증서 목록'],
+            [['유효기간', '만료일'], '해기사 면허·교육 이수 유효기간'],
+            [['면허', '교육'], '승무원 해기사 면허·교육 이수 현황'],
+            [['항로도', '항로'], '선박의 운항 항로 표시 이미지'],
+            [['회사방침', '방침'], '선사의 안전경영 방침 안내'],
+            [['당직배치', '당직'], '당직 근무자의 배치 현황 표시'],
+            [['선원명부', '명부'], '승선 선원의 인적사항 명부'],
+            [['선박제원', '제원'], '선박 주요 제원·성능 정보'],
+            [['비상조직', '조직표'], '비상시 임무·조직 체계'],
+            [['비품'], '선내 비치 비품 보유 현황'],
+            [['비상', '대응', '절차'], '비상 상황 대응 절차 안내'],
+            [['점검'], '점검 항목·점검 결과 확인'],
+            [['매뉴얼', '지침'], '업무 수행 기준·절차 정리']
         ];
 
         const autoDescribe = (title = '') => {
             const t = String(title || '').trim();
-            if (!t) return '관련 자료입니다.';
+            if (!t) return '관련 자료';
             const key = t.replace(/\s+/g, '');
 
             for (const [keys, desc] of DESC_DICT) {
                 if (keys.some(k => key.includes(k))) return desc;
             }
             // 이름 끝 글자로 문서 성격 추정
-            if (/표$/.test(t)) return `${t}의 내용을 정리한 표입니다.`;
-            if (/도$/.test(t)) return `${t}의 내용을 나타낸 이미지입니다.`;
-            if (/(서|증)$/.test(t)) return `${t}의 내용을 확인할 수 있는 문서입니다.`;
-            if (/(목록|현황)$/.test(t)) return `${t}을 정리한 자료입니다.`;
-            return `${t} 관련 자료입니다.`;
+            if (/표$/.test(t)) return `${t} 내용 정리`;
+            if (/도$/.test(t)) return `${t} 내용 표시 이미지`;
+            if (/(서|증)$/.test(t)) return `${t} 내용 확인 문서`;
+            if (/(목록|현황)$/.test(t)) return `${t} 정리 자료`;
+            return `${t} 관련 자료`;
         };
 
         // 🌟 종합 QR 게시판 열기 (미리보기)
@@ -841,7 +846,7 @@
             if (!shipObj) return showAlert("선박을 먼저 선택해주세요.");
 
             const docs = state.documents.filter(d => d.shipId === shipId);
-            const wrap = $('qr-board-table');
+            const wrap = $('qr-board-cards');
 
             $('qr-board-mode').classList.remove('hidden');
             loadBrandingImages(); // 로고/마스코트 주입 (비동기)
@@ -871,51 +876,54 @@
                 return;
             }
 
-            // 표 영역 높이에 맞춰 행 높이·QR 크기·글씨 크기를 자동 배분
-            const n = rowsData.length;
-            const areaH = wrap.clientHeight || 920;
-            const headH = 54;
-            const noteH = 64;                                  // 맨 아래 유의사항 행(2줄 기준 고정 높이)
-            const rowH = Math.floor((areaH - headH - noteH) / n);
-            const qrSize = Math.max(56, Math.min(150, rowH - 14));
-            const titleFs = Math.max(14, Math.min(24, Math.round(rowH * 0.24)));
-            const descFs = Math.max(12, Math.min(19, Math.round(rowH * 0.19)));
+            /* 카드 2열 배치 — 카드 왼쪽에 제목·설명, 오른쪽에 QR(흰 여백 박스).
+             * QR을 카드 높이만큼 크게 뽑아 인쇄물 스캔 인식률을 확보한다.
+             * 채움 순서는 좌 → 우, 그다음 줄 (읽는 순서대로).
+             */
+            const cards = rowsData;                            // [전체 자료 보기, ...문서]
+            const areaH = wrap.clientHeight || 900;
+            const areaW = wrap.clientWidth || 770;
 
-            const NAVY = '#003399', LINE = '#1e56b3';
+            const GAP = 18;                                    // 카드 사이 간격
+            const rows = Math.ceil(cards.length / 2);
+            const cardW = Math.floor((areaW - GAP) / 2);
+            // 문서가 적으면 카드가 지나치게 커지므로 높이 상한을 둔다
+            const cardH = Math.min(200, Math.floor((areaH - (rows - 1) * GAP) / rows));
+
+            const MIN_TEXT_W = 150;                            // 글씨 영역 최소 폭
+            const qrSize = Math.max(56, Math.min(
+                cardH - 4 /*테두리*/ - 16 /*위아래 여백*/ - 12 /*흰 박스 여백*/,
+                cardW - 4 - 28 - 12 - 8 - MIN_TEXT_W
+            ));
+            const qrBoxW = qrSize + 12;
+            const textW = cardW - 4 - 28 - qrBoxW - 8;         // 왼쪽 글씨 영역
+            // 글씨 하한 — 고령 열람자 고려 (문서명 17px, 설명 15px≈10.6pt 아래로는 줄이지 않음)
+            const titleFs = Math.max(17, Math.min(24, Math.round(cardH * 0.135)));
+            const descFs = Math.max(15, Math.min(18, Math.round(cardH * 0.105)));
+
+            const NAVY = '#12295c';
             const FONT = "'Malgun Gothic','Apple SD Gothic Neo',sans-serif";
-            // word-break:keep-all + white-space:normal → html2canvas에서도 글씨 잘림 없음
-            const cellBase = `border:2px solid ${LINE}; font-family:${FONT}; padding:6px 10px; vertical-align:middle;`;
+            const WRAP = 'word-break:keep-all; white-space:normal;';
 
-            const bodyHtml = rowsData.map((r) => {
-                const bg = r.isAll ? ' background:#eef4ff;' : ''; // 고정 행만 연한 파란 배경으로 강조
+            const cardHtml = (c, idx) => {
+                if (!c) return `<div style="width:${cardW}px; height:${cardH}px;"></div>`;
+                const rowIdx = Math.floor(idx / 2);
+                // 전체 자료 보기 = 미색 / 나머지는 줄마다 연한 파랑·흰색 번갈아
+                const bg = c.isAll ? '#fbf0d5' : (rowIdx % 2 === 0 ? '#dce7f7' : '#ffffff');
+                const bd = c.isAll ? '#d9b978' : '#2b4a86';
                 return `
-                <tr style="height:${rowH}px;">
-                    <td style="${cellBase}${bg} text-align:center; font-weight:800; color:${NAVY}; font-size:${titleFs}px; line-height:1.35; word-break:keep-all; white-space:normal;">${esc(r.title)}</td>
-                    <td style="${cellBase}${bg} text-align:left; font-weight:600; color:#334155; font-size:${descFs}px; line-height:1.45; word-break:keep-all; white-space:normal;">${esc(r.desc)}</td>
-                    <td style="${cellBase}${bg} text-align:center; padding:5px;">
-                        <img src="${r.qr}" alt="${esc(r.title)}" style="width:${qrSize}px; height:${qrSize}px; display:block; margin:0 auto; object-fit:contain;">
-                    </td>
-                </tr>
-            `;
-            }).join('');
+                <div style="box-sizing:border-box; width:${cardW}px; height:${cardH}px; background:${bg}; border:2px solid ${bd}; border-radius:4px; padding:8px 14px; display:flex; align-items:center; gap:8px;">
+                    <div style="width:${textW}px; flex:0 0 ${textW}px;">
+                        <div style="font-family:${FONT}; font-weight:900; color:${NAVY}; font-size:${titleFs}px; line-height:1.3; ${WRAP}">${esc(c.title)}</div>
+                        <div style="font-family:${FONT}; font-weight:600; color:#40506b; font-size:${descFs}px; line-height:1.4; margin-top:3px; ${WRAP}">${esc(c.desc)}</div>
+                    </div>
+                    <div style="flex:0 0 ${qrBoxW}px; background:#ffffff; padding:6px; line-height:0; box-sizing:border-box;">
+                        <img src="${c.qr}" alt="${esc(c.title)}" style="width:${qrSize}px; height:${qrSize}px; display:block;">
+                    </div>
+                </div>`;
+            };
 
-            wrap.innerHTML = `
-                <table style="width:100%; border-collapse:collapse; table-layout:fixed; background:#fff;">
-                    <colgroup><col style="width:26%"><col style="width:46%"><col style="width:28%"></colgroup>
-                    <thead>
-                        <tr style="height:${headH}px;">
-                            <th style="${cellBase} background:${NAVY}; color:#ffffff; font-size:21px; font-weight:900;">게시물 종류</th>
-                            <th style="${cellBase} background:${NAVY}; color:#ffffff; font-size:21px; font-weight:900;">설명</th>
-                            <th style="${cellBase} background:${NAVY}; color:#ffffff; font-size:21px; font-weight:900;">QR코드</th>
-                        </tr>
-                    </thead>
-                    <tbody>${bodyHtml}
-                        <tr style="height:${noteH}px;">
-                            <td colspan="3" style="${cellBase} background:#fff8e1; color:#8a5a00; text-align:center; font-weight:800; font-size:16px; line-height:1.4; word-break:keep-all; white-space:normal;">※ 유의사항 : 비상 시 즉시 확인해야 하는 게시물과 원본 비치가 필요한 서류는 QR코드로 대체할 수 없으므로 반드시 원본을 함께 비치하시기 바랍니다.</td>
-                        </tr>
-                    </tbody>
-                </table>
-            `;
+            wrap.innerHTML = `<div style="display:flex; flex-wrap:wrap; gap:${GAP}px; align-content:flex-start;">${cards.map(cardHtml).join('')}</div>`;
             initBoardPan(); // 팬/줌 활성화 + 화면에 맞춤
         };
 
