@@ -163,7 +163,7 @@
                 <section class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 mb-6">
                     <h2 class="text-sm font-extrabold text-slate-800 mb-4 border-b border-slate-100 pb-2 flex items-center justify-between">
                         <span>📁 등록된 문서 관리</span>
-                        <span id="doc-count-label" class="text-[11px] font-bold text-slate-400">최대 12개</span>
+                        <span id="doc-count-label" class="text-[11px] font-bold text-slate-400">최대 11개</span>
                     </h2>
                     <ul id="admin-doc-list" class="flex flex-col gap-2"></ul>
                 </section>
@@ -1242,7 +1242,7 @@
 
         const MAX_FILES = 10;
         const MAX_SIZE = 20 * 1024 * 1024; // 20MB
-        const MAX_DOCS = 12; // 선박당 최대 문서 수
+        const MAX_DOCS = 11; // 선박당 최대 문서 수 (QR 게시판에 '전체 자료 보기' 1칸이 더해져 총 12칸)
 
         $('upload-form').addEventListener('submit', async (e) => {
             e.preventDefault();
