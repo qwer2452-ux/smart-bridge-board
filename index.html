@@ -382,25 +382,74 @@
         // ── 자동 종료/로그아웃 타이머 ────────────────────────────────
         const VIEWER_TIMEOUT_MS = 5 * 60 * 1000;   // QR 열람자: 5분
         const ADMIN_TIMEOUT_MS = 60 * 60 * 1000;   // 관리자: 1시간
+
+        /* 자동 종료는 setTimeout 하나만 믿으면 안 된다.
+         * 휴대폰 화면을 끄거나 앱을 백그라운드로 보내면 브라우저가 타이머를 얼리고,
+         * 앱이 메모리에서 내려갔다 다시 열리면 타이머가 0부터 다시 시작해 버린다.
+         * → '시작 시각'을 저장해 두고 경과 시간으로 판정하고, 복귀·주기 검사로 반드시 잡는다.
+         */
+        const ADMIN_KEY = 'sbb_admin_login_at';
+        const viewerKey = (shipId) => `sbb_viewer_start_${shipId}`;
+        const readNum = (store, key) => { try { return Number(store.getItem(key)) || 0; } catch (_) { return 0; } };
+        const writeNum = (store, key, v) => { try { store.setItem(key, String(v)); } catch (_) {} };
+        const dropKey = (store, key) => { try { store.removeItem(key); } catch (_) {} };
+
+        const getAdminLoginAt = () => readNum(localStorage, ADMIN_KEY);
+        const markAdminLoginNow = () => writeNum(localStorage, ADMIN_KEY, Date.now());
+        const clearAdminLoginAt = () => dropKey(localStorage, ADMIN_KEY);
+
         let viewerTimeoutId = null;
         let adminTimeoutId = null;
+        let viewerExpired = false;                 // 만료 화면 중복 렌더 방지
         const clearAutoTimers = () => {
             clearTimeout(viewerTimeoutId); viewerTimeoutId = null;
             clearTimeout(adminTimeoutId); adminTimeoutId = null;
         };
-        const startViewerTimeout = () => {
-            clearTimeout(viewerTimeoutId);
-            viewerTimeoutId = setTimeout(expireViewer, VIEWER_TIMEOUT_MS);
+
+        const doAdminLogout = () => {
+            clearAutoTimers();
+            clearAdminLoginAt();
+            try { closeQrBoard(); closeDocEdit(); closeDocViewer(); } catch (_) {}
+            signOut(auth);
+            showAlert("보안을 위해 1시간이 지나 자동 로그아웃되었습니다.\n다시 로그인해 주세요.");
         };
+
+        const startViewerTimeout = (shipId) => {
+            clearTimeout(viewerTimeoutId);
+            const key = viewerKey(shipId);
+            let startedAt = readNum(sessionStorage, key);
+            if (!startedAt) { startedAt = Date.now(); writeNum(sessionStorage, key, startedAt); }
+            const left = VIEWER_TIMEOUT_MS - (Date.now() - startedAt);
+            if (left <= 0) return expireViewer();
+            viewerTimeoutId = setTimeout(expireViewer, left);
+        };
+
         const startAdminTimeout = () => {
             clearTimeout(adminTimeoutId);
-            adminTimeoutId = setTimeout(() => {
-                closeQrBoard(); closeDocEdit(); closeDocViewer();
-                signOut(auth);
-                showAlert("보안을 위해 1시간이 지나 자동 로그아웃되었습니다.\n다시 로그인해 주세요.");
-            }, ADMIN_TIMEOUT_MS);
+            if (!getAdminLoginAt()) markAdminLoginNow();   // 기존 로그인 사용자는 지금부터 1시간
+            const left = ADMIN_TIMEOUT_MS - (Date.now() - getAdminLoginAt());
+            if (left <= 0) return doAdminLogout();
+            adminTimeoutId = setTimeout(doAdminLogout, left);
         };
+
+        // 타이머가 얼어도 반드시 잡히도록 경과 시간을 직접 검사
+        const checkTimeouts = () => {
+            const at = getAdminLoginAt();
+            if (auth.currentUser && at && (Date.now() - at) >= ADMIN_TIMEOUT_MS) return doAdminLogout();
+
+            if (state.viewerShipId && !viewerExpired) {
+                const startedAt = readNum(sessionStorage, viewerKey(state.viewerShipId));
+                if (startedAt && (Date.now() - startedAt) >= VIEWER_TIMEOUT_MS) expireViewer();
+            }
+        };
+        document.addEventListener('visibilitychange', () => { if (!document.hidden) checkTimeouts(); });
+        window.addEventListener('focus', checkTimeouts);
+        setInterval(checkTimeouts, 30 * 1000);
+
         function expireViewer() {
+            if (viewerExpired) return;
+            viewerExpired = true;
+            clearTimeout(viewerTimeoutId); viewerTimeoutId = null;
             closeDocViewer();
             if (state.unsub.docs) { state.unsub.docs(); state.unsub.docs = null; }
             try { window.history.replaceState({}, document.title, window.location.pathname); } catch (_) {}
@@ -423,8 +472,12 @@
             if (shipIdParam) {
                 await enterViewerMode(shipIdParam, user);
             } else if (user) {
+                // 앱을 껐다 켠 경우: 로그인 후 1시간이 이미 지났으면 바로 로그아웃
+                const at = getAdminLoginAt();
+                if (at && (Date.now() - at) >= ADMIN_TIMEOUT_MS) return doAdminLogout();
                 enterAdminMode(user);
             } else {
+                clearAdminLoginAt();
                 showScreen('login-screen');
             }
         });
@@ -444,7 +497,8 @@
             state.viewerShipId = shipId;
             state.autoOpenDocId = new URLSearchParams(window.location.search).get('doc') || null;
             showScreen('viewer-mode');
-            startViewerTimeout(); // 5분 후 자동 종료
+            viewerExpired = false;
+            startViewerTimeout(shipId); // 열람 시작 후 5분에 자동 종료 (앱을 껐다 켜도 유지)
 
             try {
                 const shipSnap = await getDoc(doc(db, "ships", shipId));
@@ -507,6 +561,7 @@
                 const raw = $('email').value.trim();
                 const loginEmail = raw.includes('@') ? raw : raw + '@smartbridge.app';
                 await signInWithEmailAndPassword(auth, loginEmail, $('password').value);
+                markAdminLoginNow(); // 로그인 성공 시각 기록 → 여기서부터 1시간
                 try { window.history.replaceState({}, document.title, window.location.pathname); } catch (_) {}
             } catch (error) {
                 showAlert("아이디 또는 비밀번호가 올바르지 않습니다.");
@@ -514,7 +569,7 @@
                 btn.innerText = orig; btn.disabled = false;
             }
         });
-        $('logout-btn').addEventListener('click', () => signOut(auth));
+        $('logout-btn').addEventListener('click', () => { clearAdminLoginAt(); signOut(auth); });
 
         const goToAdminDashboard = (shipId) => {
             hide('admin-home-mode'); show('admin-mode');
